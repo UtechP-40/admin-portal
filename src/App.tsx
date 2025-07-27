@@ -6,19 +6,26 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { MotionConfig } from 'framer-motion';
 import { router } from './router';
 import { queryClient } from './services/queryClient';
-import { lightMuiTheme } from './theme';
+import { lightMuiTheme, darkMuiTheme } from './theme';
+import { useThemeMode } from './hooks/useThemeMode';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 function App() {
+  const { effectiveTheme } = useThemeMode();
+  const theme = effectiveTheme === 'dark' ? darkMuiTheme : lightMuiTheme;
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={lightMuiTheme}>
-        <CssBaseline />
-        <MotionConfig reducedMotion="user">
-          <RouterProvider router={router} />
-        </MotionConfig>
-      </ThemeProvider>
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <MotionConfig reducedMotion="user">
+            <RouterProvider router={router} />
+          </MotionConfig>
+        </ThemeProvider>
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

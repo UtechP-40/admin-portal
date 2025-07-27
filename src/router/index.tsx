@@ -3,17 +3,30 @@ import { AppLayout } from '../components/layout';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import {
   LoginPage,
+  RegisterPage,
+  PasswordResetPage,
   DashboardPage,
   DatabasePage,
   AnalyticsPage,
   MonitoringPage,
   SettingsPage,
+  TestingPage,
 } from '../pages';
+import UserManagementPage from '../pages/UserManagementPage';
+import SystemConfigurationPage from '../pages/SystemConfigurationPage';
 
 export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/register',
+    element: <RegisterPage />,
+  },
+  {
+    path: '/password-reset',
+    element: <PasswordResetPage />,
   },
   {
     path: '/',
@@ -46,6 +59,18 @@ export const router = createBrowserRouter([
       {
         path: 'settings',
         element: <SettingsPage />,
+      },
+      {
+        path: 'testing',
+        element: <TestingPage />,
+      },
+      {
+        path: 'user-management',
+        element: <UserManagementPage />,
+      },
+      {
+        path: 'system-configuration',
+        element: <SystemConfigurationPage />,
       },
     ],
   },

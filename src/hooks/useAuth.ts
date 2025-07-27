@@ -78,6 +78,11 @@ export const useAuth = () => {
     }) => authService.resetPassword(token, newPassword),
   });
 
+  // Register mutation
+  const registerMutation = useMutation({
+    mutationFn: authService.register,
+  });
+
   const login = async (credentials: LoginCredentials) => {
     return loginMutation.mutateAsync(credentials);
   };
@@ -98,6 +103,10 @@ export const useAuth = () => {
     return passwordResetMutation.mutateAsync({ token, newPassword });
   };
 
+  const register = async (data: any) => {
+    return registerMutation.mutateAsync(data);
+  };
+
   return {
     // State
     user,
@@ -111,6 +120,7 @@ export const useAuth = () => {
     refreshToken,
     requestPasswordReset,
     resetPassword,
+    register,
 
     // Mutation states
     isLoggingIn: loginMutation.isPending,
@@ -123,7 +133,17 @@ export const useAuth = () => {
     isResettingPassword: passwordResetMutation.isPending,
     passwordResetRequestError: passwordResetRequestMutation.error,
     passwordResetError: passwordResetMutation.error,
+
+    // Registration states
+    isRegistering: registerMutation.isPending,
+    registerError: registerMutation.error,
   };
+};
+
+// Create a separate hook for registration to avoid confusion
+export const useRegister = () => {
+  const { register, isRegistering, registerError } = useAuth();
+  return { register, isRegistering, registerError };
 };
 
 export default useAuth;

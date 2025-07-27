@@ -3,7 +3,7 @@ import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // API configuration
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/admin/api';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -95,6 +95,14 @@ export const apiService = {
 
   delete: <T>(url: string, config?: AxiosRequestConfig) =>
     apiClient.delete<T>(url, config),
+
+  // Generic request method for custom configurations
+  request: <T>(config: AxiosRequestConfig) =>
+    apiClient.request<T>(config),
 };
+
+// Export individual API services
+export { userManagementApi } from './userManagementApi';
+export { systemConfigurationApi } from './systemConfigurationApi';
 
 export default apiClient;

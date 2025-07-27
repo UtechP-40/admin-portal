@@ -96,6 +96,16 @@ export const authService = {
   resetPassword: async (token: string, newPassword: string): Promise<void> => {
     await apiService.post('/auth/password-reset', { token, newPassword });
   },
+
+  // Register
+  register: async (data: {
+    name: string;
+    email: string;
+    password: string;
+  }): Promise<{ message: string; email: string }> => {
+    const response = await apiService.post('/auth/register', data);
+    return response.data;
+  },
 };
 
 export default authService;

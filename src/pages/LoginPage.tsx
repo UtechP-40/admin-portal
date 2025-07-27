@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -9,6 +9,8 @@ import {
   Button,
   Alert,
   CircularProgress,
+  Link,
+  Divider,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -134,6 +136,23 @@ const LoginPage: React.FC = () => {
               >
                 {isLoggingIn ? <CircularProgress size={24} /> : 'Sign In'}
               </Button>
+              
+              <Box sx={{ textAlign: 'center', width: '100%' }}>
+                <Link component={RouterLink} to="/password-reset" variant="body2">
+                  Forgot your password?
+                </Link>
+              </Box>
+              
+              <Divider sx={{ width: '100%', my: 2 }} />
+              
+              <Box sx={{ textAlign: 'center', width: '100%' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Don't have an account?
+                </Typography>
+                <Link component={RouterLink} to="/register" variant="body2">
+                  Request admin access
+                </Link>
+              </Box>
             </Box>
           </Paper>
         </motion.div>
