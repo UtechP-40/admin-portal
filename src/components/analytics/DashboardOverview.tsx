@@ -2,7 +2,7 @@ import React from 'react';
 import { Grid, Paper, Box, Typography } from '@mui/material';
 import { People, Games, Speed, TrendingUp, Error, Timer, Memory, Wifi } from '@mui/icons-material';
 import { MetricCard } from '../charts';
-import { DashboardMetrics } from '../../services/analytics';
+import type { DashboardMetrics } from '../../services/analytics';
 
 interface DashboardOverviewProps {
   metrics: DashboardMetrics;

@@ -42,7 +42,8 @@ import {
   Error
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { analyticsService, AlertRule, ScheduledReport } from '../../services/analytics';
+import { analyticsService } from '../../services/analytics';
+import type { AlertRule, ScheduledReport } from '../../services/analytics';
 
 interface TabPanelProps {
   children?: React.ReactNode;

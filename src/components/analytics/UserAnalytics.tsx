@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Grid, Paper, Box, Typography, FormControl, InputLabel, Select, MenuItem, DatePicker } from '@mui/material';
+import { Grid, Paper, Box, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LineChart, BarChart, PieChart, AreaChart } from '../charts';
 import { analyticsService } from '../../services/analytics';
 import { useQuery } from '@tanstack/react-query';

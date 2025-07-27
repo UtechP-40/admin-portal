@@ -42,7 +42,8 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LineChart, BarChart } from '../charts';
-import { analyticsService, LogEntry, LogStreamOptions } from '../../services/analytics';
+import { analyticsService } from '../../services/analytics';
+import type { LogEntry, LogStreamOptions } from '../../services/analytics';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface LoggingDashboardProps {

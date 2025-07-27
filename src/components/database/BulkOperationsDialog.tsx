@@ -23,7 +23,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon
 } from '@mui/icons-material';
-import { GridRowId } from '@mui/x-data-grid';
+import type { GridRowId } from '@mui/x-data-grid';
 import { useMutation } from '@tanstack/react-query';
 import { DatabaseService } from '../../services/database';
 import type { CollectionMetadata, BulkOperation } from '../../types/api';

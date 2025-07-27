@@ -21,7 +21,7 @@ import {
   Storage as StorageIcon,
   Speed as SpeedIcon,
   Assessment as AssessmentIcon,
-  Index as IndexIcon
+  List as IndexIcon
 } from '@mui/icons-material';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
