@@ -1,4 +1,4 @@
-import { apiService } from './api';
+import { apiService, TokenStorage, TokenManager } from './api';
 
 export interface LoginCredentials {
   email: string;
@@ -25,50 +25,146 @@ export interface User {
   permissions: string[];
 }
 
+// Session timeout management
+class SessionManager {
+  private static timeoutId: NodeJS.Timeout | null = null;
+  private static readonly SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  private static readonly WARNING_TIME = 5 * 60 * 1000; // 5 minutes before timeout
+
+  static startSessionTimer() {
+    this.clearSessionTimer();
+    
+    // Set warning timer
+    const warningTimeoutId = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('auth:session-warning', {
+        detail: { remainingTime: this.WARNING_TIME }
+      }));
+    }, this.SESSION_TIMEOUT - this.WARNING_TIME);
+
+    // Set logout timer
+    this.timeoutId = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('auth:session-expired'));
+      TokenManager.handleLogout();
+    }, this.SESSION_TIMEOUT);
+  }
+
+  static clearSessionTimer() {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
+  }
+
+  static resetSessionTimer() {
+    this.startSessionTimer();
+  }
+}
+
 export const authService = {
   // Login
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await apiService.post<AuthResponse>(
-      '/auth/login',
-      credentials
-    );
+    try {
+      const response = await apiService.post<AuthResponse>(
+        '/auth/login',
+        credentials
+      );
 
-    // Store tokens
-    localStorage.setItem('adminToken', response.data.token);
-    localStorage.setItem('adminRefreshToken', response.data.refreshToken);
+      // Store tokens using secure storage
+      TokenStorage.setTokens(response.data.token, response.data.refreshToken);
+      
+      // Start session management
+      SessionManager.startSessionTimer();
 
-    return response.data;
+      // Initialize audit context
+      const { auditService } = await import('./auditService');
+      auditService.initializeContext({
+        userId: response.data.user.id,
+        userEmail: response.data.user.email,
+        userName: response.data.user.name,
+        userRole: response.data.user.role,
+      });
+
+      // Log successful login
+      await auditService.logLogin(credentials.email, true);
+
+      // Dispatch login event
+      window.dispatchEvent(new CustomEvent('auth:login', {
+        detail: { user: response.data.user }
+      }));
+
+      return response.data;
+    } catch (error: any) {
+      // Log failed login attempt
+      const { auditService } = await import('./auditService');
+      await auditService.logLogin(
+        credentials.email, 
+        false, 
+        error.response?.data?.message || error.message
+      );
+      throw error;
+    }
   },
 
   // Logout
   logout: async (): Promise<void> => {
+    // Get current user info for audit logging
+    let userEmail = '';
     try {
-      await apiService.post('/auth/logout');
+      const user = await authService.getCurrentUser();
+      userEmail = user.email;
     } catch (error) {
-      console.error('Logout error:', error);
+      // User info might not be available, continue with logout
+    }
+
+    try {
+      // Notify server about logout
+      await apiService.post('/auth/logout', {
+        refreshToken: TokenStorage.getRefreshToken()
+      });
+    } catch (error) {
+      console.error('Logout API error:', error);
     } finally {
-      // Clear tokens regardless of API call success
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminRefreshToken');
+      // Log logout event before clearing context
+      if (userEmail) {
+        try {
+          const { auditService } = await import('./auditService');
+          await auditService.logLogout(userEmail);
+        } catch (error) {
+          console.error('Failed to log logout event:', error);
+        }
+      }
+
+      // Clear session timer
+      SessionManager.clearSessionTimer();
+      
+      // Clear audit context
+      try {
+        const { auditService } = await import('./auditService');
+        auditService.clearContext();
+      } catch (error) {
+        console.error('Failed to clear audit context:', error);
+      }
+      
+      // Use TokenManager for consistent logout handling
+      TokenManager.handleLogout();
     }
   },
 
-  // Refresh token
+  // Refresh token (delegated to TokenManager)
   refreshToken: async (): Promise<AuthResponse> => {
-    const refreshToken = localStorage.getItem('adminRefreshToken');
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await apiService.post<AuthResponse>('/auth/refresh', {
-      refreshToken,
-    });
-
-    // Update stored tokens
-    localStorage.setItem('adminToken', response.data.token);
-    localStorage.setItem('adminRefreshToken', response.data.refreshToken);
-
-    return response.data;
+    const newToken = await TokenManager.refreshToken();
+    
+    // Reset session timer on successful refresh
+    SessionManager.resetSessionTimer();
+    
+    // Get user info with new token
+    const user = await authService.getCurrentUser();
+    
+    return {
+      token: newToken,
+      refreshToken: TokenStorage.getRefreshToken()!,
+      user
+    };
   },
 
   // Get current user
@@ -79,13 +175,30 @@ export const authService = {
 
   // Check if user is authenticated
   isAuthenticated: (): boolean => {
-    const token = localStorage.getItem('adminToken');
-    return !!token;
+    const token = TokenStorage.getAccessToken();
+    if (!token) return false;
+
+    try {
+      // Basic JWT expiration check
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp > currentTime;
+    } catch (error) {
+      console.warn('Token validation error:', error);
+      return false;
+    }
   },
 
   // Get stored token
   getToken: (): string | null => {
-    return localStorage.getItem('adminToken');
+    return TokenStorage.getAccessToken();
+  },
+
+  // Extend session (reset timeout)
+  extendSession: (): void => {
+    if (authService.isAuthenticated()) {
+      SessionManager.resetSessionTimer();
+    }
   },
 
   // Password reset

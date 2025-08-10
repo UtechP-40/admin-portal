@@ -1,15 +1,36 @@
-import React from 'react';
-import { Grid, Paper, Box, Typography } from '@mui/material';
-import { People, Games, Speed, TrendingUp, Error, Timer, Memory, Wifi } from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
+import { Grid, Paper, Box, Typography, IconButton, Tooltip, Alert } from '@mui/material';
+import { People, Games, Speed, TrendingUp, Error, Timer, Memory, Wifi, Refresh, Settings } from '@mui/icons-material';
 import { MetricCard } from '../charts';
+import { useRealtimeMetrics } from '../../hooks/useRealtimeMetrics';
+import AlertNotificationSystem from './AlertNotificationSystem';
 import type { DashboardMetrics } from '../../services/analytics';
 
 interface DashboardOverviewProps {
-  metrics: DashboardMetrics;
+  metrics?: DashboardMetrics;
   loading?: boolean;
+  enableRealtime?: boolean;
 }
 
-const DashboardOverview: React.FC<DashboardOverviewProps> = ({ metrics, loading = false }) => {
+const DashboardOverview: React.FC<DashboardOverviewProps> = ({ 
+  metrics: propMetrics, 
+  loading: propLoading = false,
+  enableRealtime = true,
+}) => {
+  const [showRealtimeStatus, setShowRealtimeStatus] = useState(true);
+  
+  // Use real-time metrics if enabled, otherwise fall back to props
+  const { 
+    metrics: realtimeMetrics, 
+    isConnected, 
+    isLoading: realtimeLoading, 
+    error,
+    refresh,
+    lastUpdate,
+  } = useRealtimeMetrics({ enabled: enableRealtime });
+
+  const metrics = enableRealtime ? realtimeMetrics : propMetrics;
+  const loading = enableRealtime ? realtimeLoading : propLoading;
   const formatUptime = (seconds: number) => {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
@@ -27,9 +48,59 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ metrics, loading 
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
-        Dashboard Overview
-      </Typography>
+      {/* Header with real-time status and controls */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h5">
+          Dashboard Overview
+        </Typography>
+        
+        {enableRealtime && (
+          <Box display="flex" alignItems="center" gap={2}>
+            {/* Real-time status indicator */}
+            <Tooltip title={isConnected ? 'Real-time connected' : 'Using fallback polling'}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: isConnected ? 'success.main' : 'warning.main',
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {isConnected ? 'Live' : 'Polling'}
+                </Typography>
+              </Box>
+            </Tooltip>
+
+            {/* Last update time */}
+            {lastUpdate && (
+              <Typography variant="caption" color="text.secondary">
+                Updated: {lastUpdate.toLocaleTimeString()}
+              </Typography>
+            )}
+
+            {/* Refresh button */}
+            <IconButton size="small" onClick={refresh} disabled={loading}>
+              <Refresh />
+            </IconButton>
+
+            {/* Alert notifications */}
+            <AlertNotificationSystem />
+          </Box>
+        )}
+      </Box>
+
+      {/* Error alert */}
+      {error && showRealtimeStatus && (
+        <Alert 
+          severity="warning" 
+          sx={{ mb: 2 }}
+          onClose={() => setShowRealtimeStatus(false)}
+        >
+          Real-time connection issue: {error}. Using fallback data polling.
+        </Alert>
+      )}
       
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>

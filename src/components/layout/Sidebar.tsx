@@ -71,6 +71,12 @@ const menuItems = [
     badge: 2, // Example: 2 active alerts
   },
   { 
+    path: '/security', 
+    label: 'Security', 
+    icon: <SecurityIcon />,
+    badge: null,
+  },
+  { 
     path: '/testing', 
     label: 'API Testing', 
     icon: <TestingIcon />,

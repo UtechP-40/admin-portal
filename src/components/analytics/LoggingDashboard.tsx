@@ -25,7 +25,10 @@ import {
   DialogActions,
   Switch,
   FormControlLabel,
-  Alert
+  Alert,
+  Tabs,
+  Tab,
+  Badge,
 } from '@mui/material';
 import {
   Search,
@@ -36,7 +39,10 @@ import {
   Pause,
   Clear,
   Visibility,
-  GetApp
+  GetApp,
+  Analytics,
+  Notifications,
+  TrendingUp,
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -45,13 +51,37 @@ import { LineChart, BarChart } from '../charts';
 import { analyticsService } from '../../services/analytics';
 import type { LogEntry, LogStreamOptions } from '../../services/analytics';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import AdvancedLogSearch from './AdvancedLogSearch';
+import LogAlertingSystem from './LogAlertingSystem';
 
 interface LoggingDashboardProps {
   startDate: Date;
   endDate: Date;
 }
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`logging-tabpanel-${index}`}
+      aria-labelledby={`logging-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
 const LoggingDashboard: React.FC<LoggingDashboardProps> = ({ startDate, endDate }) => {
+  const [activeTab, setActiveTab] = useState(0);
   const [logOptions, setLogOptions] = useState<LogStreamOptions>({
     level: '',
     category: '',
@@ -234,43 +264,87 @@ const LoggingDashboard: React.FC<LoggingDashboardProps> = ({ startDate, endDate 
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5">
-          Logging Dashboard
-        </Typography>
-        <Box display="flex" gap={1}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-              />
-            }
-            label="Auto Refresh"
-          />
-          <Button
-            variant="outlined"
-            startIcon={<FilterList />}
-            onClick={() => setFilterDialogOpen(true)}
-          >
-            Filters
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<Download />}
-            onClick={handleDownloadLogs}
-          >
-            Download
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<GetApp />}
-            onClick={handleExportLogs}
-          >
-            Export
-          </Button>
+      <Typography variant="h5" gutterBottom>
+        Logging Dashboard
+      </Typography>
+
+      <Paper sx={{ width: '100%' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)}>
+            <Tab
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Search />
+                  Basic Logs
+                </Box>
+              }
+            />
+            <Tab
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Analytics />
+                  Advanced Search
+                </Box>
+              }
+            />
+            <Tab
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Notifications />
+                  Log Alerts
+                </Box>
+              }
+            />
+            <Tab
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <TrendingUp />
+                  Analytics
+                </Box>
+              }
+            />
+          </Tabs>
         </Box>
-      </Box>
+
+        {/* Basic Logs Tab */}
+        <TabPanel value={activeTab} index={0}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">
+              Basic Log Viewer
+            </Typography>
+            <Box display="flex" gap={1}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={autoRefresh}
+                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                  />
+                }
+                label="Auto Refresh"
+              />
+              <Button
+                variant="outlined"
+                startIcon={<FilterList />}
+                onClick={() => setFilterDialogOpen(true)}
+              >
+                Filters
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<Download />}
+                onClick={handleDownloadLogs}
+              >
+                Download
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<GetApp />}
+                onClick={handleExportLogs}
+              >
+                Export
+              </Button>
+            </Box>
+          </Box>
 
       {/* Log Statistics */}
       <Grid container spacing={3} mb={3}>
@@ -455,6 +529,228 @@ const LoggingDashboard: React.FC<LoggingDashboardProps> = ({ startDate, endDate 
       </Paper>
 
       {/* Log Detail Dialog */}
+      <Dialog
+        open={!!selectedLog}
+        onClose={() => setSelectedLog(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Log Entry Details</DialogTitle>
+        <DialogContent>
+          {selectedLog && (
+            <Box>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Timestamp
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                    {formatTimestamp(selectedLog.timestamp)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Level
+                  </Typography>
+                  {formatLogLevel(selectedLog.level)}
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Source
+                  </Typography>
+                  <Chip label={selectedLog.source} size="small" variant="outlined" />
+                </Grid>
+                {selectedLog.correlationId && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Correlation ID
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                      {selectedLog.correlationId}
+                    </Typography>
+                  </Grid>
+                )}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Message
+                  </Typography>
+                  <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                      {selectedLog.message}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                {selectedLog.metadata && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Metadata
+                    </Typography>
+                    <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                        {JSON.stringify(selectedLog.metadata, null, 2)}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedLog(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Filter Dialog */}
+      <Dialog
+        open={filterDialogOpen}
+        onClose={() => setFilterDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Advanced Filters</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DateTimePicker
+                  label="Start Time"
+                  value={logOptions.startTime || null}
+                  onChange={(date) => setLogOptions({ ...logOptions, startTime: date || undefined })}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </LocalizationProvider>
+            </Grid>
+            <Grid item xs={12}>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DateTimePicker
+                  label="End Time"
+                  value={logOptions.endTime || null}
+                  onChange={(date) => setLogOptions({ ...logOptions, endTime: date || undefined })}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </LocalizationProvider>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Max Lines"
+                value={logOptions.maxLines || 1000}
+                onChange={(e) => setLogOptions({ ...logOptions, maxLines: parseInt(e.target.value) || 1000 })}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFilterDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setFilterDialogOpen(false);
+              refetch();
+            }}
+            variant="contained"
+          >
+            Apply Filters
+          </Button>
+        </DialogActions>
+      </Dialog>
+        </TabPanel>
+
+        {/* Advanced Search Tab */}
+        <TabPanel value={activeTab} index={1}>
+          <AdvancedLogSearch
+            onLogSelect={setSelectedLog}
+            realTimeEnabled={true}
+          />
+        </TabPanel>
+
+        {/* Log Alerts Tab */}
+        <TabPanel value={activeTab} index={2}>
+          <LogAlertingSystem />
+        </TabPanel>
+
+        {/* Analytics Tab */}
+        <TabPanel value={activeTab} index={3}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 3 }}>
+                <BarChart
+                  data={formatLogStatsData()}
+                  title="Log Entries by Level"
+                  xKey="level"
+                  yKey="count"
+                  height={300}
+                  formatTooltip={(value, name) => [`${value} entries`, 'Count']}
+                />
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 3 }}>
+                <LineChart
+                  data={formatLogTrendsData()}
+                  title="Log Trends Over Time"
+                  xKey="time"
+                  yKey="logs"
+                  height={300}
+                  formatTooltip={(value, name) => [`${value} logs`, 'Count']}
+                />
+              </Paper>
+            </Grid>
+            <Grid item xs={12}>
+              <Paper sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Log Analytics Summary
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={3}>
+                    <Box textAlign="center">
+                      <Typography variant="h4" color="primary">
+                        {logs.length.toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Logs
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <Box textAlign="center">
+                      <Typography variant="h4" color="error">
+                        {logs.filter(log => log.level === 'error').length}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Error Logs
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <Box textAlign="center">
+                      <Typography variant="h4" color="warning">
+                        {logs.filter(log => log.level === 'warn').length}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Warning Logs
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <Box textAlign="center">
+                      <Typography variant="h4" color="success">
+                        {logs.filter(log => log.level === 'info').length}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Info Logs
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Grid>
+          </Grid>
+        </TabPanel>
+      </Paper>
+
+      {/* Log Detail Dialog - Shared across tabs */}
       <Dialog
         open={!!selectedLog}
         onClose={() => setSelectedLog(null)}

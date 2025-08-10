@@ -6,3 +6,7 @@ export { default as SystemPerformance } from './SystemPerformance';
 export { default as LoggingDashboard } from './LoggingDashboard';
 export { default as CustomDashboard } from './CustomDashboard';
 export { default as AlertsAndReports } from './AlertsAndReports';
+export { default as AuditTrail } from './AuditTrail';
+export { default as CustomizableDashboard } from './CustomizableDashboard';
+export { default as DashboardWidget } from './DashboardWidget';
+export { default as AlertNotificationSystem } from './AlertNotificationSystem';

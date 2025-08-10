@@ -1,4 +1,10 @@
 export { ApiTesting } from './ApiTesting';
 export { SocketTesting } from './SocketTesting';
 export { GameRoomMonitoring } from './GameRoomMonitoring';
+export { SecurityModerationTools } from './SecurityModerationTools';
+export { AdvancedAnalytics } from './AdvancedAnalytics';
 export { MobileSimulator } from './MobileSimulator';
+export { TestSuiteManager } from './TestSuiteManager';
+export { TestScheduler } from './TestScheduler';
+export { ApiDocumentationIntegration } from './ApiDocumentationIntegration';
+export { LoadTestingManager } from './LoadTestingManager';

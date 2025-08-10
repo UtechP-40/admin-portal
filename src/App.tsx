@@ -9,6 +9,7 @@ import { queryClient } from './services/queryClient';
 import { lightMuiTheme, darkMuiTheme } from './theme';
 import { useThemeMode } from './hooks/useThemeMode';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import SessionManager from './components/common/SessionManager';
 
 function App() {
   const { effectiveTheme } = useThemeMode();
@@ -21,6 +22,7 @@ function App() {
           <CssBaseline />
           <MotionConfig reducedMotion="user">
             <RouterProvider router={router} />
+            <SessionManager />
           </MotionConfig>
         </ThemeProvider>
         {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}

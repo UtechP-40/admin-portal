@@ -6,6 +6,16 @@ import {
   Tabs,
   Tab,
   Button,
+  Chip,
+  Grid,
+  Card,
+  CardContent,
+  IconButton,
+  Tooltip,
+  Alert,
+  Snackbar,
+  Menu,
+  MenuItem as MenuItemComponent,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -14,15 +24,7 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem,
-  Chip,
-  Grid,
-  Card,
-  CardContent,
-  IconButton,
-  Tooltip,
-  Alert,
-  Snackbar
+  MenuItem
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -32,13 +34,30 @@ import {
   Block as BlockIcon,
   CheckCircle as CheckCircleIcon,
   Person as PersonIcon,
-  AdminPanelSettings as AdminIcon
+  AdminPanelSettings as AdminIcon,
+  MoreVert as MoreVertIcon,
+  Email as EmailIcon,
+  ImportExport as ImportExportIcon,
+  Group as GroupIcon,
+  Timeline as TimelineIcon
 } from '@mui/icons-material';
 import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
-import type { GridColDef } from '@mui/x-data-grid';
+import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { userManagementApi } from '../services/api';
+import {
+  UserCreationDialog,
+  BulkUserOperations,
+  UserActivityMonitor,
+  UserSessionManager,
+  EmailVerificationDialog,
+  UserImportExport,
+  GameUserManagement,
+  RoleTemplateManager,
+  RoleAssignmentDialog,
+  RoleHierarchyViewer
+} from '../components/users';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -65,8 +84,14 @@ function TabPanel(props: TabPanelProps) {
 const UserManagementPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [editUserOpen, setEditUserOpen] = useState(false);
+  const [bulkOperationsOpen, setBulkOperationsOpen] = useState(false);
+  const [importExportOpen, setImportExportOpen] = useState(false);
+  const [emailVerificationOpen, setEmailVerificationOpen] = useState(false);
+  const [activityMonitorOpen, setActivityMonitorOpen] = useState(false);
+  const [sessionManagerOpen, setSessionManagerOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [actionsMenuAnchor, setActionsMenuAnchor] = useState<null | HTMLElement>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
   const queryClient = useQueryClient();
@@ -114,7 +139,6 @@ const UserManagementPage: React.FC = () => {
     mutationFn: ({ id, data }: { id: string; data: any }) => userManagementApi.updateAdminUser(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
-      setEditUserOpen(false);
       setSnackbar({ open: true, message: 'User updated successfully', severity: 'success' });
     },
     onError: (error: any) => {
@@ -214,14 +238,26 @@ const UserManagementPage: React.FC = () => {
       field: 'actions',
       type: 'actions',
       headerName: 'Actions',
-      width: 120,
+      width: 180,
       getActions: (params) => [
+        <GridActionsCellItem
+          icon={<EmailIcon />}
+          label="Email Verification"
+          onClick={() => {
+            setSelectedUser(params.row);
+            setEmailVerificationOpen(true);
+          }}
+        />,
         <GridActionsCellItem
           icon={<EditIcon />}
           label="Edit"
           onClick={() => {
             setSelectedUser(params.row);
-            setEditUserOpen(true);
+            // For now, we'll use a simple edit - could be enhanced later
+            const newStatus = prompt('Enter new status (pending, approved, suspended, rejected):', params.row.status);
+            if (newStatus && ['pending', 'approved', 'suspended', 'rejected'].includes(newStatus)) {
+              updateUserMutation.mutate({ id: params.row.id, data: { status: newStatus } });
+            }
           }}
         />,
         <GridActionsCellItem
@@ -377,121 +413,167 @@ const UserManagementPage: React.FC = () => {
           <TabPanel value={tabValue} index={0}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="h6">Admin Users</Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setCreateUserOpen(true)}
-              >
-                Create Admin User
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {selectedUsers.length > 0 && (
+                  <>
+                    <Button
+                      variant="outlined"
+                      startIcon={<GroupIcon />}
+                      onClick={() => setBulkOperationsOpen(true)}
+                    >
+                      Bulk Actions ({selectedUsers.length})
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ImportExportIcon />}
+                      onClick={() => setImportExportOpen(true)}
+                    >
+                      Export Selected
+                    </Button>
+                  </>
+                )}
+                <IconButton
+                  onClick={(e) => setActionsMenuAnchor(e.currentTarget)}
+                >
+                  <MoreVertIcon />
+                </IconButton>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setCreateUserOpen(true)}
+                >
+                  Create Admin User
+                </Button>
+              </Box>
             </Box>
             <DataGrid
               rows={adminUsers?.users || []}
               columns={adminUserColumns}
               loading={adminUsersLoading}
               pageSizeOptions={[10, 25, 50]}
-              disableRowSelectionOnClick
+              checkboxSelection
+              onRowSelectionModelChange={(newSelection: GridRowSelectionModel) => {
+                setSelectedUsers(newSelection as string[]);
+              }}
+              rowSelectionModel={selectedUsers}
               autoHeight
             />
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6">Game Users</Typography>
-            </Box>
-            <DataGrid
-              rows={gameUsers?.users || []}
-              columns={gameUserColumns}
-              loading={gameUsersLoading}
-              pageSizeOptions={[10, 25, 50]}
-              disableRowSelectionOnClick
-              autoHeight
-            />
+            <GameUserManagement />
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6">Role Templates</Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => {/* Create role template logic */}}
-              >
-                Create Role Template
-              </Button>
-            </Box>
-            <Grid container spacing={2}>
-              {roleTemplates?.map((template: any) => (
-                <Grid item xs={12} md={6} lg={4} key={template.id}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        {template.name}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary" paragraph>
-                        {template.description}
-                      </Typography>
-                      <Box sx={{ mb: 2 }}>
-                        {template.permissions.slice(0, 3).map((permission: string) => (
-                          <Chip
-                            key={permission}
-                            label={permission}
-                            size="small"
-                            sx={{ mr: 0.5, mb: 0.5 }}
-                          />
-                        ))}
-                        {template.permissions.length > 3 && (
-                          <Chip
-                            label={`+${template.permissions.length - 3} more`}
-                            size="small"
-                            variant="outlined"
-                          />
-                        )}
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Chip
-                          label={template.isDefault ? 'Default' : 'Custom'}
-                          color={template.isDefault ? 'primary' : 'default'}
-                          size="small"
-                        />
-                        <Box>
-                          <IconButton size="small">
-                            <EditIcon />
-                          </IconButton>
-                          {!template.isDefault && (
-                            <IconButton size="small">
-                              <DeleteIcon />
-                            </IconButton>
-                          )}
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+            <RoleTemplateManager />
           </TabPanel>
         </Paper>
       </motion.div>
 
-      {/* Create User Dialog */}
-      <CreateUserDialog
+      {/* Enhanced User Creation Dialog */}
+      <UserCreationDialog
         open={createUserOpen}
         onClose={() => setCreateUserOpen(false)}
-        onSubmit={handleCreateUser}
         roleTemplates={roleTemplates || []}
-        loading={createUserMutation.isPending}
       />
 
-      {/* Edit User Dialog */}
-      <EditUserDialog
-        open={editUserOpen}
-        onClose={() => setEditUserOpen(false)}
-        onSubmit={handleUpdateUser}
-        user={selectedUser}
+      {/* Bulk User Operations Dialog */}
+      <BulkUserOperations
+        open={bulkOperationsOpen}
+        onClose={() => setBulkOperationsOpen(false)}
+        selectedUsers={selectedUsers}
         roleTemplates={roleTemplates || []}
-        loading={updateUserMutation.isPending}
       />
+
+      {/* Import/Export Dialog */}
+      <UserImportExport
+        open={importExportOpen}
+        onClose={() => setImportExportOpen(false)}
+        selectedUsers={selectedUsers}
+        roleTemplates={roleTemplates || []}
+      />
+
+      {/* Email Verification Dialog */}
+      {selectedUser && (
+        <EmailVerificationDialog
+          open={emailVerificationOpen}
+          onClose={() => setEmailVerificationOpen(false)}
+          userId={selectedUser.id}
+          userEmail={selectedUser.email}
+          username={selectedUser.username}
+        />
+      )}
+
+      {/* Actions Menu */}
+      <Menu
+        anchorEl={actionsMenuAnchor}
+        open={Boolean(actionsMenuAnchor)}
+        onClose={() => setActionsMenuAnchor(null)}
+      >
+        <MenuItemComponent
+          onClick={() => {
+            setImportExportOpen(true);
+            setActionsMenuAnchor(null);
+          }}
+        >
+          <ImportExportIcon sx={{ mr: 1 }} />
+          Import/Export Users
+        </MenuItemComponent>
+        <MenuItemComponent
+          onClick={() => {
+            setActivityMonitorOpen(true);
+            setActionsMenuAnchor(null);
+          }}
+        >
+          <TimelineIcon sx={{ mr: 1 }} />
+          Activity Monitor
+        </MenuItemComponent>
+        <MenuItemComponent
+          onClick={() => {
+            setSessionManagerOpen(true);
+            setActionsMenuAnchor(null);
+          }}
+        >
+          <SecurityIcon sx={{ mr: 1 }} />
+          Session Manager
+        </MenuItemComponent>
+      </Menu>
+
+      {/* Activity Monitor Dialog */}
+      {activityMonitorOpen && (
+        <Dialog
+          open={activityMonitorOpen}
+          onClose={() => setActivityMonitorOpen(false)}
+          maxWidth="xl"
+          fullWidth
+        >
+          <DialogTitle>User Activity Monitor</DialogTitle>
+          <DialogContent>
+            <UserActivityMonitor showAllUsers={true} />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setActivityMonitorOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {/* Session Manager Dialog */}
+      {sessionManagerOpen && (
+        <Dialog
+          open={sessionManagerOpen}
+          onClose={() => setSessionManagerOpen(false)}
+          maxWidth="xl"
+          fullWidth
+        >
+          <DialogTitle>User Session Manager</DialogTitle>
+          <DialogContent>
+            <UserSessionManager showAllUsers={true} />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setSessionManagerOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* Snackbar */}
       <Snackbar
@@ -511,262 +593,6 @@ const UserManagementPage: React.FC = () => {
   );
 };
 
-// Create User Dialog Component
-const CreateUserDialog: React.FC<{
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (data: any) => void;
-  roleTemplates: any[];
-  loading: boolean;
-}> = ({ open, onClose, onSubmit, roleTemplates, loading }) => {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    firstName: '',
-    lastName: '',
-    permissions: []
-  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
-
-  const handleRoleTemplateSelect = (templateId: string) => {
-    const template = roleTemplates.find(t => t.id === templateId);
-    if (template) {
-      setFormData({ ...formData, permissions: template.permissions });
-    }
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <form onSubmit={handleSubmit}>
-        <DialogTitle>Create Admin User</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="First Name"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Last Name"
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Role Template (Optional)</InputLabel>
-                <Select
-                  value=""
-                  onChange={(e) => handleRoleTemplateSelect(e.target.value)}
-                >
-                  {roleTemplates.map((template) => (
-                    <MenuItem key={template.id} value={template.id}>
-                      {template.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="body2" color="textSecondary">
-                Selected Permissions: {formData.permissions.length}
-              </Typography>
-              <Box sx={{ mt: 1 }}>
-                {formData.permissions.map((permission: string) => (
-                  <Chip
-                    key={permission}
-                    label={permission}
-                    size="small"
-                    sx={{ mr: 0.5, mb: 0.5 }}
-                    onDelete={() => {
-                      setFormData({
-                        ...formData,
-                        permissions: formData.permissions.filter(p => p !== permission)
-                      });
-                    }}
-                  />
-                ))}
-              </Box>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? 'Creating...' : 'Create User'}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
-  );
-};
-
-// Edit User Dialog Component
-const EditUserDialog: React.FC<{
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (data: any) => void;
-  user: any;
-  roleTemplates: any[];
-  loading: boolean;
-}> = ({ open, onClose, onSubmit, user, roleTemplates, loading }) => {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    firstName: '',
-    lastName: '',
-    permissions: [],
-    status: ''
-  });
-
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        username: user.username || '',
-        email: user.email || '',
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        permissions: user.permissions || [],
-        status: user.status || ''
-      });
-    }
-  }, [user]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <form onSubmit={handleSubmit}>
-        <DialogTitle>Edit Admin User</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="First Name"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Last Name"
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                >
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="approved">Approved</MenuItem>
-                  <MenuItem value="suspended">Suspended</MenuItem>
-                  <MenuItem value="rejected">Rejected</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="body2" color="textSecondary">
-                Permissions: {formData.permissions.length}
-              </Typography>
-              <Box sx={{ mt: 1 }}>
-                {formData.permissions.map((permission: string) => (
-                  <Chip
-                    key={permission}
-                    label={permission}
-                    size="small"
-                    sx={{ mr: 0.5, mb: 0.5 }}
-                    onDelete={() => {
-                      setFormData({
-                        ...formData,
-                        permissions: formData.permissions.filter(p => p !== permission)
-                      });
-                    }}
-                  />
-                ))}
-              </Box>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? 'Updating...' : 'Update User'}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
-  );
-};
 
 export default UserManagementPage;

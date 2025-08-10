@@ -11,6 +11,7 @@ import {
   MonitoringPage,
   SettingsPage,
   TestingPage,
+  SecurityPage,
 } from '../pages';
 import UserManagementPage from '../pages/UserManagementPage';
 import SystemConfigurationPage from '../pages/SystemConfigurationPage';
@@ -71,6 +72,10 @@ export const router = createBrowserRouter([
       {
         path: 'system-configuration',
         element: <SystemConfigurationPage />,
+      },
+      {
+        path: 'security',
+        element: <SecurityPage />,
       },
     ],
   },

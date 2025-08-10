@@ -38,10 +38,17 @@ import {
   PlayArrow as PlayArrowIcon,
   Settings as SettingsIcon,
   Speed as SpeedIcon,
+  FolderOpen as FolderOpenIcon,
+  Schedule as ScheduleIcon,
+  Description as DescriptionIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiService } from '../../services/api';
+import { TestSuiteManager } from './TestSuiteManager';
+import { TestScheduler } from './TestScheduler';
+import { ApiDocumentationIntegration } from './ApiDocumentationIntegration';
+import { LoadTestingManager } from './LoadTestingManager';
 
 interface ApiRequest {
   id: string;
@@ -92,6 +99,7 @@ export function ApiTesting() {
   const [showEnvironment, setShowEnvironment] = useState(false);
   const [showLoadTesting, setShowLoadTesting] = useState(false);
   const [tabValue, setTabValue] = useState(0);
+  const [mainTabValue, setMainTabValue] = useState(0);
 
   // Load API documentation
   const { data: apiDocs } = useQuery({
@@ -238,243 +246,277 @@ export function ApiTesting() {
 
   return (
     <Box>
-      <Grid container spacing={3}>
-        {/* Request Builder */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Request Builder
-            </Typography>
-            
-            <Box sx={{ mb: 2 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={3}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Method</InputLabel>
-                    <Select
-                      value={selectedMethod}
-                      onChange={(e) => setSelectedMethod(e.target.value)}
-                      label="Method"
-                    >
-                      <MenuItem value="GET">GET</MenuItem>
-                      <MenuItem value="POST">POST</MenuItem>
-                      <MenuItem value="PUT">PUT</MenuItem>
-                      <MenuItem value="DELETE">DELETE</MenuItem>
-                      <MenuItem value="PATCH">PATCH</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={7}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="URL"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="{{BASE_URL}}/api/endpoint"
-                  />
-                </Grid>
-                <Grid item xs={2}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={sendRequest}
-                    disabled={loading || !url}
-                    startIcon={loading ? <CircularProgress size={16} /> : <SendIcon />}
-                  >
-                    Send
-                  </Button>
-                </Grid>
-              </Grid>
-            </Box>
+      <Paper sx={{ width: '100%' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={mainTabValue}
+            onChange={(e, v) => setMainTabValue(v)}
+            aria-label="api testing tabs"
+            variant="fullWidth"
+          >
+            <Tab icon={<SendIcon />} label="Request Builder" />
+            <Tab icon={<FolderOpenIcon />} label="Test Suites" />
+            <Tab icon={<ScheduleIcon />} label="Scheduler" />
+            <Tab icon={<SpeedIcon />} label="Load Testing" />
+            <Tab icon={<DescriptionIcon />} label="API Docs" />
+          </Tabs>
+        </Box>
 
-            <Box sx={{ mb: 2 }}>
-              <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
-                <Tab label="Headers" />
-                <Tab label="Body" />
-                <Tab label="Auth" />
-              </Tabs>
-              
-              {tabValue === 0 && (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Headers (JSON)"
-                  value={headers}
-                  onChange={(e) => setHeaders(e.target.value)}
-                  sx={{ mt: 2 }}
-                />
-              )}
-              
-              {tabValue === 1 && (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={6}
-                  label="Request Body (JSON)"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  disabled={selectedMethod === 'GET'}
-                  sx={{ mt: 2 }}
-                />
-              )}
-              
-              {tabValue === 2 && (
-                <Box sx={{ mt: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="Authorization Token"
-                    value={environmentVars.find(v => v.key === 'AUTH_TOKEN')?.value || ''}
-                    onChange={(e) => {
-                      setEnvironmentVars(prev => prev.map(v => 
-                        v.key === 'AUTH_TOKEN' ? { ...v, value: e.target.value } : v
-                      ));
-                    }}
-                    placeholder="Bearer token or API key"
-                  />
-                </Box>
-              )}
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Button
-                startIcon={<SaveIcon />}
-                onClick={saveToCollection}
-                disabled={!url}
-              >
-                Save
-              </Button>
-              <Button
-                startIcon={<HistoryIcon />}
-                onClick={() => setShowHistory(true)}
-              >
-                History
-              </Button>
-              <Button
-                startIcon={<SettingsIcon />}
-                onClick={() => setShowEnvironment(true)}
-              >
-                Environment
-              </Button>
-              <Button
-                startIcon={<SpeedIcon />}
-                onClick={() => setShowLoadTesting(true)}
-              >
-                Load Test
-              </Button>
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* Response Viewer */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Response
-            </Typography>
-            
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            
-            {response && (
-              <Box>
-                <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <Chip
-                    label={`${response.status} ${response.statusText}`}
-                    color={response.status < 400 ? 'success' : 'error'}
-                  />
-                  <Chip label={`${response.duration}ms`} variant="outlined" />
-                </Box>
-                
-                <Accordion>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography>Response Headers</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <pre style={{ fontSize: '12px', overflow: 'auto' }}>
-                      {JSON.stringify(response.headers, null, 2)}
-                    </pre>
-                  </AccordionDetails>
-                </Accordion>
-                
-                <Accordion defaultExpanded>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography>Response Body</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <pre style={{ fontSize: '12px', overflow: 'auto', maxHeight: '400px' }}>
-                      {JSON.stringify(response.data, null, 2)}
-                    </pre>
-                  </AccordionDetails>
-                </Accordion>
-              </Box>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* API Documentation */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              API Documentation Explorer
-            </Typography>
-            
-            {apiDocs?.data?.endpoints?.map((endpoint: any, index: number) => (
-              <Accordion key={index}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Chip
-                      label={endpoint.method}
-                      size="small"
-                      color={endpoint.method === 'GET' ? 'primary' : 'secondary'}
-                    />
-                    <Typography>{endpoint.path}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {endpoint.description}
-                    </Typography>
+        <Box sx={{ p: 3 }}>
+          {/* Request Builder Tab */}
+          {mainTabValue === 0 && (
+            <Grid container spacing={3}>
+              {/* Request Builder */}
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Request Builder
+                  </Typography>
+                  
+                  <Box sx={{ mb: 2 }}>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item xs={3}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Method</InputLabel>
+                          <Select
+                            value={selectedMethod}
+                            onChange={(e) => setSelectedMethod(e.target.value)}
+                            label="Method"
+                          >
+                            <MenuItem value="GET">GET</MenuItem>
+                            <MenuItem value="POST">POST</MenuItem>
+                            <MenuItem value="PUT">PUT</MenuItem>
+                            <MenuItem value="DELETE">DELETE</MenuItem>
+                            <MenuItem value="PATCH">PATCH</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                      <Grid item xs={7}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="URL"
+                          value={url}
+                          onChange={(e) => setUrl(e.target.value)}
+                          placeholder="{{BASE_URL}}/api/endpoint"
+                        />
+                      </Grid>
+                      <Grid item xs={2}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          onClick={sendRequest}
+                          disabled={loading || !url}
+                          startIcon={loading ? <CircularProgress size={16} /> : <SendIcon />}
+                        >
+                          Send
+                        </Button>
+                      </Grid>
+                    </Grid>
                   </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Parameters:
-                      </Typography>
-                      <pre style={{ fontSize: '12px' }}>
-                        {JSON.stringify(endpoint.parameters || {}, null, 2)}
-                      </pre>
-                      
-                      <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
-                        Example Response:
-                      </Typography>
-                      <pre style={{ fontSize: '12px' }}>
-                        {JSON.stringify(endpoint.example || {}, null, 2)}
-                      </pre>
-                    </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
+                      <Tab label="Headers" />
+                      <Tab label="Body" />
+                      <Tab label="Auth" />
+                    </Tabs>
+                    
+                    {tabValue === 0 && (
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={4}
+                        label="Headers (JSON)"
+                        value={headers}
+                        onChange={(e) => setHeaders(e.target.value)}
+                        sx={{ mt: 2 }}
+                      />
+                    )}
+                    
+                    {tabValue === 1 && (
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={6}
+                        label="Request Body (JSON)"
+                        value={body}
+                        onChange={(e) => setBody(e.target.value)}
+                        disabled={selectedMethod === 'GET'}
+                        sx={{ mt: 2 }}
+                      />
+                    )}
+                    
+                    {tabValue === 2 && (
+                      <Box sx={{ mt: 2 }}>
+                        <TextField
+                          fullWidth
+                          label="Authorization Token"
+                          value={environmentVars.find(v => v.key === 'AUTH_TOKEN')?.value || ''}
+                          onChange={(e) => {
+                            setEnvironmentVars(prev => prev.map(v => 
+                              v.key === 'AUTH_TOKEN' ? { ...v, value: e.target.value } : v
+                            ));
+                          }}
+                          placeholder="Bearer token or API key"
+                        />
+                      </Box>
+                    )}
+                  </Box>
+
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => {
-                        setSelectedMethod(endpoint.method);
-                        setUrl(`{{BASE_URL}}${endpoint.path}`);
-                        if (endpoint.exampleBody) {
-                          setBody(JSON.stringify(endpoint.exampleBody, null, 2));
-                        }
-                      }}
+                      startIcon={<SaveIcon />}
+                      onClick={saveToCollection}
+                      disabled={!url}
                     >
-                      Try It
+                      Save
+                    </Button>
+                    <Button
+                      startIcon={<HistoryIcon />}
+                      onClick={() => setShowHistory(true)}
+                    >
+                      History
+                    </Button>
+                    <Button
+                      startIcon={<SettingsIcon />}
+                      onClick={() => setShowEnvironment(true)}
+                    >
+                      Environment
+                    </Button>
+                    <Button
+                      startIcon={<SpeedIcon />}
+                      onClick={() => setShowLoadTesting(true)}
+                    >
+                      Load Test
                     </Button>
                   </Box>
-                </AccordionDetails>
-              </Accordion>
-            ))}
-          </Paper>
-        </Grid>
-      </Grid>
+                </Paper>
+              </Grid>
+
+              {/* Response Viewer */}
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Response
+                  </Typography>
+                  
+                  {error && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      {error}
+                    </Alert>
+                  )}
+                  
+                  {response && (
+                    <Box>
+                      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                          label={`${response.status} ${response.statusText}`}
+                          color={response.status < 400 ? 'success' : 'error'}
+                        />
+                        <Chip label={`${response.duration}ms`} variant="outlined" />
+                      </Box>
+                      
+                      <Accordion>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Typography>Response Headers</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <pre style={{ fontSize: '12px', overflow: 'auto' }}>
+                            {JSON.stringify(response.headers, null, 2)}
+                          </pre>
+                        </AccordionDetails>
+                      </Accordion>
+                      
+                      <Accordion defaultExpanded>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Typography>Response Body</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <pre style={{ fontSize: '12px', overflow: 'auto', maxHeight: '400px' }}>
+                            {JSON.stringify(response.data, null, 2)}
+                          </pre>
+                        </AccordionDetails>
+                      </Accordion>
+                    </Box>
+                  )}
+                </Paper>
+              </Grid>
+
+              {/* API Documentation Explorer */}
+              <Grid item xs={12}>
+                <Paper sx={{ p: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    API Documentation Explorer
+                  </Typography>
+                  
+                  {apiDocs?.data?.endpoints?.map((endpoint: any, index: number) => (
+                    <Accordion key={index}>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Chip
+                            label={endpoint.method}
+                            size="small"
+                            color={endpoint.method === 'GET' ? 'primary' : 'secondary'}
+                          />
+                          <Typography>{endpoint.path}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {endpoint.description}
+                          </Typography>
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Parameters:
+                            </Typography>
+                            <pre style={{ fontSize: '12px' }}>
+                              {JSON.stringify(endpoint.parameters || {}, null, 2)}
+                            </pre>
+                            
+                            <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                              Example Response:
+                            </Typography>
+                            <pre style={{ fontSize: '12px' }}>
+                              {JSON.stringify(endpoint.example || {}, null, 2)}
+                            </pre>
+                          </Box>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                              setSelectedMethod(endpoint.method);
+                              setUrl(`{{BASE_URL}}${endpoint.path}`);
+                              if (endpoint.exampleBody) {
+                                setBody(JSON.stringify(endpoint.exampleBody, null, 2));
+                              }
+                            }}
+                          >
+                            Try It
+                          </Button>
+                        </Box>
+                      </AccordionDetails>
+                    </Accordion>
+                  ))}
+                </Paper>
+              </Grid>
+            </Grid>
+          )}
+
+          {/* Test Suites Tab */}
+          {mainTabValue === 1 && <TestSuiteManager />}
+
+          {/* Scheduler Tab */}
+          {mainTabValue === 2 && <TestScheduler />}
+
+          {/* Load Testing Tab */}
+          {mainTabValue === 3 && <LoadTestingManager />}
+
+          {/* API Documentation Tab */}
+          {mainTabValue === 4 && <ApiDocumentationIntegration />}
+        </Box>
+      </Paper>
 
       {/* History Dialog */}
       <Dialog open={showHistory} onClose={() => setShowHistory(false)} maxWidth="md" fullWidth>

@@ -95,6 +95,10 @@ export const useAuth = () => {
     return refreshTokenMutation.mutateAsync();
   };
 
+  const extendSession = () => {
+    authService.extendSession();
+  };
+
   const requestPasswordReset = async (email: string) => {
     return passwordResetRequestMutation.mutateAsync(email);
   };
@@ -118,6 +122,7 @@ export const useAuth = () => {
     login,
     logout,
     refreshToken,
+    extendSession,
     requestPasswordReset,
     resetPassword,
     register,

@@ -313,6 +313,52 @@ export const analyticsService = {
     await apiService.delete(`/admin/dashboards/${id}`);
   },
 
+  // Report builder methods
+  async getReports(): Promise<any[]> {
+    const response = await apiService.get('/admin/reports');
+    return response.data;
+  },
+
+  async getReport(id: string): Promise<any> {
+    const response = await apiService.get(`/admin/reports/${id}`);
+    return response.data;
+  },
+
+  async saveReport(report: any): Promise<any> {
+    if (report.id && report.id.startsWith('report_')) {
+      // Create new report
+      const response = await apiService.post('/admin/reports', report);
+      return response.data;
+    } else {
+      // Update existing report
+      const response = await apiService.put(`/admin/reports/${report.id}`, report);
+      return response.data;
+    }
+  },
+
+  async deleteReport(id: string): Promise<void> {
+    await apiService.delete(`/admin/reports/${id}`);
+  },
+
+  async executeReport(id: string, parameters?: any): Promise<any> {
+    const response = await apiService.post(`/admin/reports/${id}/execute`, parameters);
+    return response.data;
+  },
+
+  // Advanced visualization methods
+  async getChartData(config: any): Promise<any> {
+    const response = await apiService.post('/admin/analytics/chart-data', config);
+    return response.data;
+  },
+
+  async exportChart(config: any, format: 'png' | 'svg' | 'pdf'): Promise<string> {
+    const response = await apiService.post('/admin/analytics/export-chart', {
+      config,
+      format,
+    });
+    return response.data.filePath;
+  },
+
   // Export jobs methods
   async getExportJobs(): Promise<any[]> {
     const response = await apiService.get('/admin/exports/jobs');

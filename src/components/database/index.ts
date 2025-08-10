@@ -6,3 +6,4 @@ export { default as ExportDialog } from './ExportDialog';
 export { default as QueryBuilder } from './QueryBuilder';
 export { default as CollectionStats } from './CollectionStats';
 export { default as BackupRestore } from './BackupRestore';
+export { default as DatabaseMonitoring } from './DatabaseMonitoring';

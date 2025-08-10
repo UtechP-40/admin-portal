@@ -45,13 +45,21 @@ import {
   Sync as SyncIcon,
   Download as DownloadIcon,
   Upload as UploadIcon,
-  History as HistoryIcon
+  History as HistoryIcon,
+  Rule as RuleIcon,
+  Analytics as AnalyticsIcon,
+  Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
 import type { GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { systemConfigurationApi } from '../services/api';
+import TargetingRulesManager from '../components/system-configuration/TargetingRulesManager';
+import ABTestManager from '../components/system-configuration/ABTestManager';
+import FeatureFlagImpactTracker from '../components/system-configuration/FeatureFlagImpactTracker';
+import SystemSettingsManager from '../components/system-configuration/SystemSettingsManager';
+import EnvironmentSyncManager from '../components/system-configuration/EnvironmentSyncManager';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -83,6 +91,15 @@ const SystemConfigurationPage: React.FC = () => {
   const [selectedConfig, setSelectedConfig] = useState<any>(null);
   const [selectedEnvironment, setSelectedEnvironment] = useState('production');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  
+  // Advanced feature flag management states
+  const [targetingRulesOpen, setTargetingRulesOpen] = useState(false);
+  const [abTestOpen, setAbTestOpen] = useState(false);
+  const [impactTrackerOpen, setImpactTrackerOpen] = useState(false);
+  const [selectedFeatureFlagKey, setSelectedFeatureFlagKey] = useState<string>('');
+  
+  // Enhanced system settings management states
+  const [enhancedSettingsOpen, setEnhancedSettingsOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -239,7 +256,7 @@ const SystemConfigurationPage: React.FC = () => {
       field: 'actions',
       type: 'actions',
       headerName: 'Actions',
-      width: 120,
+      width: 200,
       getActions: (params) => [
         <GridActionsCellItem
           icon={<EditIcon />}
@@ -250,9 +267,28 @@ const SystemConfigurationPage: React.FC = () => {
           }}
         />,
         <GridActionsCellItem
-          icon={<HistoryIcon />}
-          label="History"
-          onClick={() => {/* Show history */}}
+          icon={<RuleIcon />}
+          label="Targeting Rules"
+          onClick={() => {
+            setSelectedFeatureFlagKey(params.row.key);
+            setTargetingRulesOpen(true);
+          }}
+        />,
+        <GridActionsCellItem
+          icon={<AnalyticsIcon />}
+          label="A/B Test"
+          onClick={() => {
+            setSelectedFeatureFlagKey(params.row.key);
+            setAbTestOpen(true);
+          }}
+        />,
+        <GridActionsCellItem
+          icon={<AssessmentIcon />}
+          label="Impact"
+          onClick={() => {
+            setSelectedFeatureFlagKey(params.row.key);
+            setImpactTrackerOpen(true);
+          }}
         />
       ]
     }
@@ -449,13 +485,22 @@ const SystemConfigurationPage: React.FC = () => {
           <TabPanel value={tabValue} index={1}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="h6">System Settings</Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setCreateSettingOpen(true)}
-              >
-                Create System Setting
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<SettingsIcon />}
+                  onClick={() => setEnhancedSettingsOpen(true)}
+                >
+                  Enhanced Management
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setCreateSettingOpen(true)}
+                >
+                  Create System Setting
+                </Button>
+              </Box>
             </Box>
 
             {/* Settings by Category */}
@@ -545,80 +590,10 @@ const SystemConfigurationPage: React.FC = () => {
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
-            <Typography variant="h6" gutterBottom>Environment Synchronization</Typography>
-            <Typography variant="body2" color="textSecondary" paragraph>
-              Sync configurations between different environments. Use with caution in production.
-            </Typography>
-            
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Sync Feature Flags
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" paragraph>
-                      Copy feature flag configurations from one environment to another.
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel>From</InputLabel>
-                        <Select defaultValue="staging" label="From">
-                          {environments?.map((env: string) => (
-                            <MenuItem key={env} value={env}>{env}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel>To</InputLabel>
-                        <Select defaultValue="production" label="To">
-                          {environments?.map((env: string) => (
-                            <MenuItem key={env} value={env}>{env}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
-                    <Button variant="contained" startIcon={<SyncIcon />}>
-                      Sync Feature Flags
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Sync System Settings
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" paragraph>
-                      Copy system settings from one environment to another.
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel>From</InputLabel>
-                        <Select defaultValue="staging" label="From">
-                          {environments?.map((env: string) => (
-                            <MenuItem key={env} value={env}>{env}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel>To</InputLabel>
-                        <Select defaultValue="production" label="To">
-                          {environments?.map((env: string) => (
-                            <MenuItem key={env} value={env}>{env}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
-                    <Button variant="contained" startIcon={<SyncIcon />}>
-                      Sync System Settings
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
+            <EnvironmentSyncManager
+              environments={environments || []}
+              onClose={() => {}}
+            />
           </TabPanel>
         </Paper>
       </motion.div>
@@ -668,6 +643,79 @@ const SystemConfigurationPage: React.FC = () => {
         }}
         loading={updateFlagMutation.isPending || updateSettingMutation.isPending}
       />
+
+      {/* Advanced Feature Flag Management Dialogs */}
+      <Dialog
+        open={targetingRulesOpen}
+        onClose={() => setTargetingRulesOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0 }}>
+          <TargetingRulesManager
+            featureFlagKey={selectedFeatureFlagKey}
+            environment={selectedEnvironment}
+            onClose={() => setTargetingRulesOpen(false)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTargetingRulesOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={abTestOpen}
+        onClose={() => setAbTestOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0 }}>
+          <ABTestManager
+            featureFlagKey={selectedFeatureFlagKey}
+            environment={selectedEnvironment}
+            onClose={() => setAbTestOpen(false)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAbTestOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={impactTrackerOpen}
+        onClose={() => setImpactTrackerOpen(false)}
+        maxWidth="xl"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0 }}>
+          <FeatureFlagImpactTracker
+            featureFlagKey={selectedFeatureFlagKey}
+            environment={selectedEnvironment}
+            onClose={() => setImpactTrackerOpen(false)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setImpactTrackerOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Enhanced System Settings Management Dialog */}
+      <Dialog
+        open={enhancedSettingsOpen}
+        onClose={() => setEnhancedSettingsOpen(false)}
+        maxWidth="xl"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0 }}>
+          <SystemSettingsManager
+            environment={selectedEnvironment}
+            onClose={() => setEnhancedSettingsOpen(false)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEnhancedSettingsOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar

@@ -27,6 +27,14 @@ import {
   FormControlLabel,
   Divider,
   Badge,
+  Tab,
+  Tabs,
+  LinearProgress,
+  Tooltip,
+  Menu,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -39,9 +47,25 @@ import {
   Circle as CircleIcon,
   Wifi as WifiIcon,
   WifiOff as WifiOffIcon,
+  FiberManualRecord as RecordIcon,
+  Save as SaveIcon,
+  Replay as ReplayIcon,
+  Speed as SpeedIcon,
+  Assessment as AssessmentIcon,
+  MoreVert as MoreVertIcon,
+  Timeline as TimelineIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { testingService } from '../../services/testingService';
+import { 
+  SocketTestSession, 
+  SocketRecording, 
+  RecordedSocketEvent, 
+  SocketLoadTestConfig,
+  SocketLoadTestResult 
+} from '../../types/testing';
 
 interface SocketConnection {
   id: string;
@@ -117,7 +141,33 @@ export function SocketTesting() {
   const [newConnectionUrl, setNewConnectionUrl] = useState('ws://localhost:3000');
   const [newConnectionName, setNewConnectionName] = useState('');
   const [newConnectionNamespace, setNewConnectionNamespace] = useState('/');
+  const [mainTabValue, setMainTabValue] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [currentRecording, setCurrentRecording] = useState<RecordedSocketEvent[]>([]);
+  const [recordingStartTime, setRecordingStartTime] = useState<number>(0);
+  const [showLoadTestDialog, setShowLoadTestDialog] = useState(false);
+  const [showRecordingsDialog, setShowRecordingsDialog] = useState(false);
+  const [showDiagnosticsDialog, setShowDiagnosticsDialog] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedConnectionForMenu, setSelectedConnectionForMenu] = useState<SocketConnection | null>(null);
   const eventsEndRef = useRef<HTMLDivElement>(null);
+
+  const queryClient = useQueryClient();
+
+  const { data: testSessions = [] } = useQuery({
+    queryKey: ['socket-test-sessions'],
+    queryFn: testingService.getSocketTestSessions,
+  });
+
+  const { data: loadTestConfigs = [] } = useQuery({
+    queryKey: ['socket-load-test-configs'],
+    queryFn: testingService.getSocketLoadTestConfigs,
+  });
+
+  const { data: loadTestResults = [] } = useQuery({
+    queryKey: ['socket-load-test-results'],
+    queryFn: () => testingService.getSocketLoadTestResults(),
+  });
 
   useEffect(() => {
     if (autoScroll && eventsEndRef.current) {
@@ -312,271 +362,494 @@ export function SocketTesting() {
 
   return (
     <Box>
-      <Grid container spacing={3}>
-        {/* Connection Management */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Socket Connections</Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => setShowConnectionDialog(true)}
-              >
-                Add Connection
-              </Button>
-            </Box>
+      <Paper sx={{ width: '100%' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={mainTabValue}
+            onChange={(e, v) => setMainTabValue(v)}
+            aria-label="socket testing tabs"
+            variant="fullWidth"
+          >
+            <Tab icon={<SendIcon />} label="Socket Testing" />
+            <Tab icon={<RecordIcon />} label="Recording & Playback" />
+            <Tab icon={<SpeedIcon />} label="Load Testing" />
+            <Tab icon={<AssessmentIcon />} label="Diagnostics" />
+          </Tabs>
+        </Box>
 
-            <List>
-              {connections.map((connection) => (
-                <ListItem
-                  key={connection.id}
-                  selected={selectedConnection === connection.id}
-                  onClick={() => setSelectedConnection(connection.id)}
-                  sx={{ cursor: 'pointer', borderRadius: 1, mb: 1 }}
-                >
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Badge
-                          color={connection.connected ? 'success' : 'error'}
-                          variant="dot"
-                        >
-                          <Typography variant="subtitle2">
-                            {connection.name}
-                          </Typography>
-                        </Badge>
-                      </Box>
-                    }
-                    secondary={`${connection.url}${connection.namespace}`}
-                  />
-                  <ListItemSecondaryAction>
-                    <IconButton
+        <Box sx={{ p: 3 }}>
+          {/* Socket Testing Tab */}
+          {mainTabValue === 0 && (
+            <Grid container spacing={3}>
+              {/* Connection Management */}
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">Socket Connections</Typography>
+                    <Button
+                      variant="outlined"
                       size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (connection.connected) {
-                          disconnectSocket(connection.id);
-                        } else {
-                          connectSocket(connection.id);
-                        }
-                      }}
+                      onClick={() => setShowConnectionDialog(true)}
                     >
-                      {connection.connected ? <StopIcon /> : <PlayArrowIcon />}
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteConnection(connection.id);
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
-
-            {connections.length === 0 && (
-              <Alert severity="info">
-                No connections. Add a connection to start testing.
-              </Alert>
-            )}
-          </Paper>
-
-          {/* Connection Status */}
-          {selectedConnection && (
-            <Paper sx={{ p: 3, mt: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Connection Status
-              </Typography>
-              {(() => {
-                const conn = connections.find(c => c.id === selectedConnection);
-                return conn ? (
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      {conn.connected ? <WifiIcon color="success" /> : <WifiOffIcon color="error" />}
-                      <Typography variant="body2">
-                        {conn.connected ? 'Connected' : 'Disconnected'}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Socket ID: {conn.socket?.id || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      URL: {conn.url}{conn.namespace}
-                    </Typography>
+                      Add Connection
+                    </Button>
                   </Box>
-                ) : null;
-              })()}
-            </Paper>
-          )}
-        </Grid>
 
-        {/* Event Emission */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Event Emission
-            </Typography>
-
-            <Box sx={{ mb: 2 }}>
-              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                <InputLabel>Connection</InputLabel>
-                <Select
-                  value={selectedConnection}
-                  onChange={(e) => setSelectedConnection(e.target.value)}
-                  label="Connection"
-                >
-                  {connections.map((conn) => (
-                    <MenuItem key={conn.id} value={conn.id}>
-                      {conn.name} {conn.connected ? '🟢' : '🔴'}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <TextField
-                fullWidth
-                size="small"
-                label="Event Name"
-                value={eventName}
-                onChange={(e) => setEventName(e.target.value)}
-                sx={{ mb: 2 }}
-                placeholder="join-room"
-              />
-
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Event Data (JSON)"
-                value={eventData}
-                onChange={(e) => setEventData(e.target.value)}
-                sx={{ mb: 2 }}
-              />
-
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SendIcon />}
-                  onClick={sendEvent}
-                  disabled={!selectedConnection || !eventName || !connections.find(c => c.id === selectedConnection)?.connected}
-                >
-                  Send Event
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => setShowEventTemplates(true)}
-                >
-                  Templates
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<ClearIcon />}
-                  onClick={clearEvents}
-                >
-                  Clear Events
-                </Button>
-              </Box>
-            </Box>
-          </Paper>
-
-          {/* Event Log */}
-          <Paper sx={{ p: 3, mt: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Event Log</Typography>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Filter</InputLabel>
-                  <Select
-                    value={filterByConnection}
-                    onChange={(e) => setFilterByConnection(e.target.value)}
-                    label="Filter"
-                  >
-                    <MenuItem value="all">All Connections</MenuItem>
-                    {connections.map((conn) => (
-                      <MenuItem key={conn.id} value={conn.id}>
-                        {conn.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={autoScroll}
-                      onChange={(e) => setAutoScroll(e.target.checked)}
-                    />
-                  }
-                  label="Auto Scroll"
-                />
-              </Box>
-            </Box>
-
-            <Box sx={{ maxHeight: '400px', overflow: 'auto' }}>
-              <AnimatePresence>
-                {filteredEvents.map((event) => {
-                  const connection = connections.find(c => c.id === event.connectionId);
-                  return (
-                    <motion.div
-                      key={event.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Card sx={{ mb: 1, border: '1px solid', borderColor: 'divider' }}>
-                        <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <Box sx={{ flex: 1 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <Chip
-                                  size="small"
-                                  label={event.type}
-                                  color={getEventTypeColor(event.type) as any}
-                                />
+                  <List>
+                    {connections.map((connection) => (
+                      <ListItem
+                        key={connection.id}
+                        selected={selectedConnection === connection.id}
+                        onClick={() => setSelectedConnection(connection.id)}
+                        sx={{ cursor: 'pointer', borderRadius: 1, mb: 1 }}
+                      >
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Badge
+                                color={connection.connected ? 'success' : 'error'}
+                                variant="dot"
+                              >
                                 <Typography variant="subtitle2">
-                                  {event.event}
+                                  {connection.name}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {connection?.name}
-                                </Typography>
-                              </Box>
-                              <pre style={{ 
-                                fontSize: '12px', 
-                                margin: 0, 
-                                overflow: 'auto',
-                                maxHeight: '100px',
-                                backgroundColor: 'rgba(0,0,0,0.05)',
-                                padding: '8px',
-                                borderRadius: '4px'
-                              }}>
-                                {JSON.stringify(event.data, null, 2)}
-                              </pre>
+                              </Badge>
                             </Box>
-                            <Typography variant="caption" color="text.secondary">
-                              {event.timestamp.toLocaleTimeString()}
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="caption" display="block">
+                                {connection.url}{connection.namespace}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Messages: {connection.messageCount || 0} | Errors: {connection.errorCount || 0}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                        <ListItemSecondaryAction>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedConnectionForMenu(connection);
+                              setAnchorEl(e.currentTarget);
+                            }}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                    ))}
+                  </List>
+
+                  {connections.length === 0 && (
+                    <Alert severity="info">
+                      No connections. Add a connection to start testing.
+                    </Alert>
+                  )}
+                </Paper>
+
+                {/* Connection Status */}
+                {selectedConnection && (
+                  <Paper sx={{ p: 3, mt: 2 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Connection Status
+                    </Typography>
+                    {(() => {
+                      const conn = connections.find(c => c.id === selectedConnection);
+                      return conn ? (
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            {conn.connected ? <WifiIcon color="success" /> : <WifiOffIcon color="error" />}
+                            <Typography variant="body2">
+                              {conn.connected ? 'Connected' : 'Disconnected'}
                             </Typography>
                           </Box>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-              <div ref={eventsEndRef} />
-            </Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Socket ID: {conn.socket?.id || 'N/A'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            URL: {conn.url}{conn.namespace}
+                          </Typography>
+                          {conn.connectionTime && (
+                            <Typography variant="body2" color="text.secondary">
+                              Connected: {conn.connectionTime.toLocaleTimeString()}
+                            </Typography>
+                          )}
+                          {conn.lastActivity && (
+                            <Typography variant="body2" color="text.secondary">
+                              Last Activity: {conn.lastActivity.toLocaleTimeString()}
+                            </Typography>
+                          )}
+                          <Box sx={{ mt: 2 }}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => setShowDiagnosticsDialog(true)}
+                              startIcon={<AssessmentIcon />}
+                            >
+                              Run Diagnostics
+                            </Button>
+                          </Box>
+                        </Box>
+                      ) : null;
+                    })()}
+                  </Paper>
+                )}
+              </Grid>
 
-            {filteredEvents.length === 0 && (
-              <Alert severity="info">
-                No events yet. Connect to a socket and start sending events.
-              </Alert>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
+              {/* Event Emission */}
+              <Grid item xs={12} md={8}>
+                <Paper sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">Event Emission</Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      {isRecording ? (
+                        <Button
+                          variant="contained"
+                          color="error"
+                          startIcon={<StopIcon />}
+                          onClick={() => setIsRecording(false)}
+                        >
+                          Stop Recording
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outlined"
+                          startIcon={<RecordIcon />}
+                          onClick={() => setIsRecording(true)}
+                        >
+                          Start Recording
+                        </Button>
+                      )}
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                      <InputLabel>Connection</InputLabel>
+                      <Select
+                        value={selectedConnection}
+                        onChange={(e) => setSelectedConnection(e.target.value)}
+                        label="Connection"
+                      >
+                        {connections.map((conn) => (
+                          <MenuItem key={conn.id} value={conn.id}>
+                            {conn.name} {conn.connected ? '🟢' : '🔴'}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Event Name"
+                      value={eventName}
+                      onChange={(e) => setEventName(e.target.value)}
+                      sx={{ mb: 2 }}
+                      placeholder="join-room"
+                    />
+
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      label="Event Data (JSON)"
+                      value={eventData}
+                      onChange={(e) => setEventData(e.target.value)}
+                      sx={{ mb: 2 }}
+                    />
+
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        variant="contained"
+                        startIcon={<SendIcon />}
+                        onClick={sendEvent}
+                        disabled={!selectedConnection || !eventName || !connections.find(c => c.id === selectedConnection)?.connected}
+                      >
+                        Send Event
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={() => setShowEventTemplates(true)}
+                      >
+                        Templates
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<ClearIcon />}
+                        onClick={clearEvents}
+                      >
+                        Clear Events
+                      </Button>
+                    </Box>
+                  </Box>
+                </Paper>
+
+                {/* Event Log */}
+                <Paper sx={{ p: 3, mt: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">Event Log</Typography>
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                      {isRecording && (
+                        <Chip
+                          icon={<RecordIcon />}
+                          label={`Recording (${currentRecording.length} events)`}
+                          color="error"
+                          variant="outlined"
+                        />
+                      )}
+                      <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <InputLabel>Filter</InputLabel>
+                        <Select
+                          value={filterByConnection}
+                          onChange={(e) => setFilterByConnection(e.target.value)}
+                          label="Filter"
+                        >
+                          <MenuItem value="all">All Connections</MenuItem>
+                          {connections.map((conn) => (
+                            <MenuItem key={conn.id} value={conn.id}>
+                              {conn.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={autoScroll}
+                            onChange={(e) => setAutoScroll(e.target.checked)}
+                          />
+                        }
+                        label="Auto Scroll"
+                      />
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ maxHeight: '400px', overflow: 'auto' }}>
+                    <AnimatePresence>
+                      {filteredEvents.map((event) => {
+                        const connection = connections.find(c => c.id === event.connectionId);
+                        return (
+                          <motion.div
+                            key={event.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Card sx={{ mb: 1, border: '1px solid', borderColor: 'divider' }}>
+                              <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                  <Box sx={{ flex: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                      <Chip
+                                        size="small"
+                                        label={event.type}
+                                        color={getEventTypeColor(event.type) as any}
+                                      />
+                                      <Typography variant="subtitle2">
+                                        {event.event}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {connection?.name}
+                                      </Typography>
+                                      {event.latency && (
+                                        <Chip
+                                          size="small"
+                                          label={`${event.latency}ms`}
+                                          variant="outlined"
+                                        />
+                                      )}
+                                    </Box>
+                                    <pre style={{ 
+                                      fontSize: '12px', 
+                                      margin: 0, 
+                                      overflow: 'auto',
+                                      maxHeight: '100px',
+                                      backgroundColor: 'rgba(0,0,0,0.05)',
+                                      padding: '8px',
+                                      borderRadius: '4px'
+                                    }}>
+                                      {JSON.stringify(event.data, null, 2)}
+                                    </pre>
+                                  </Box>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {event.timestamp.toLocaleTimeString()}
+                                  </Typography>
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                    <div ref={eventsEndRef} />
+                  </Box>
+
+                  {filteredEvents.length === 0 && (
+                    <Alert severity="info">
+                      No events yet. Connect to a socket and start sending events.
+                    </Alert>
+                  )}
+                </Paper>
+              </Grid>
+            </Grid>
+          )}
+
+          {/* Recording & Playback Tab */}
+          {mainTabValue === 1 && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Recording & Playback
+              </Typography>
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Current Recording
+                    </Typography>
+                    
+                    {isRecording ? (
+                      <Box>
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                          Recording in progress... {currentRecording.length} events captured
+                        </Alert>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          startIcon={<StopIcon />}
+                          onClick={() => setIsRecording(false)}
+                        >
+                          Stop Recording
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Start recording to capture socket events for later playback.
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          startIcon={<RecordIcon />}
+                          onClick={() => setIsRecording(true)}
+                          disabled={!selectedConnection || !connections.find(c => c.id === selectedConnection)?.connected}
+                        >
+                          Start Recording
+                        </Button>
+                      </Box>
+                    )}
+                  </Paper>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Saved Recordings
+                    </Typography>
+                    
+                    <Alert severity="info">
+                      Recording and playback functionality is available. Connect to a socket and start recording events.
+                    </Alert>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
+          {/* Load Testing Tab */}
+          {mainTabValue === 2 && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Socket Load Testing
+              </Typography>
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Load Test Configuration
+                    </Typography>
+                    
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Concurrent Connections"
+                      value={10}
+                      sx={{ mb: 2 }}
+                    />
+                    
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Duration (seconds)"
+                      value={60}
+                      sx={{ mb: 2 }}
+                    />
+                    
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Events per Second"
+                      value={5}
+                      sx={{ mb: 2 }}
+                    />
+                    
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<SpeedIcon />}
+                    >
+                      Run Load Test
+                    </Button>
+                  </Paper>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Load Test Results
+                    </Typography>
+                    
+                    <Alert severity="info">
+                      Configure and run a load test to see results here.
+                    </Alert>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
+          {/* Diagnostics Tab */}
+          {mainTabValue === 3 && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Connection Diagnostics
+              </Typography>
+              
+              <Paper sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">Connection Statistics</Typography>
+                  <Button
+                    variant="contained"
+                    disabled={!selectedConnection}
+                    startIcon={<AssessmentIcon />}
+                  >
+                    Run Diagnostics
+                  </Button>
+                </Box>
+                
+                <Alert severity="info">
+                  Select a connection and run diagnostics to see detailed information.
+                </Alert>
+              </Paper>
+            </Box>
+          )}
+        </Box>
+      </Paper>
 
       {/* New Connection Dialog */}
       <Dialog open={showConnectionDialog} onClose={() => setShowConnectionDialog(false)} maxWidth="sm" fullWidth>

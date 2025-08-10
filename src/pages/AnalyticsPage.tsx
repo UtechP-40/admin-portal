@@ -27,6 +27,7 @@ import {
   CustomDashboard,
   AlertsAndReports
 } from '../components/analytics';
+import CustomizableDashboard from '../components/analytics/CustomizableDashboard';
 import { analyticsService } from '../services/analytics';
 
 interface TabPanelProps {
@@ -203,7 +204,11 @@ const AnalyticsPage: React.FC = () => {
                 <CircularProgress />
               </Box>
             ) : dashboardMetrics ? (
-              <DashboardOverview metrics={dashboardMetrics} loading={isLoading} />
+              <DashboardOverview 
+                metrics={dashboardMetrics} 
+                loading={isLoading} 
+                enableRealtime={true}
+              />
             ) : (
               <Alert severity="info">No data available for the selected date range.</Alert>
             )}
@@ -243,7 +248,7 @@ const AnalyticsPage: React.FC = () => {
 
           {/* Custom Dashboard Tab */}
           <TabPanel value={activeTab} index={5}>
-            <CustomDashboard />
+            <CustomizableDashboard />
           </TabPanel>
 
           {/* Alerts and Reports Tab */}

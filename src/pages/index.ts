@@ -8,3 +8,4 @@ export { default as AnalyticsPage } from './AnalyticsPage';
 export { default as MonitoringPage } from './MonitoringPage';
 export { default as SettingsPage } from './SettingsPage';
 export { default as TestingPage } from './TestingPage';
+export { default as SecurityPage } from './SecurityPage';

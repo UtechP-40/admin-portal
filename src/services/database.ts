@@ -9,6 +9,12 @@ import type {
   ApiResponse,
   PaginatedResponse
 } from '../types/api';
+import type {
+  DocumentSchema,
+  DocumentVersion,
+  DocumentRelationship,
+  DocumentValidationResult
+} from '../types/database';
 
 export class DatabaseService {
   /**
@@ -247,5 +253,141 @@ export class DatabaseService {
     if (count < 1000) return count.toString();
     if (count < 1000000) return (count / 1000).toFixed(1) + 'K';
     return (count / 1000000).toFixed(1) + 'M';
+  }
+
+  /**
+   * Get document schema with enhanced metadata
+   */
+  static async getDocumentSchema(collectionName: string): Promise<DocumentSchema> {
+    const response = await apiService.get<ApiResponse<DocumentSchema>>(
+      `/database/collections/${collectionName}/schema`
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Update document with versioning support
+   */
+  static async updateDocumentWithVersioning(
+    collectionName: string,
+    documentId: string,
+    data: any,
+    comment?: string
+  ) {
+    const response = await apiService.put<ApiResponse<any>>(
+      `/database/collections/${collectionName}/${documentId}/versioned`,
+      { data, comment }
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Create document with versioning support
+   */
+  static async createDocumentWithVersioning(
+    collectionName: string,
+    data: any,
+    comment?: string
+  ) {
+    const response = await apiService.post<ApiResponse<any>>(
+      `/database/collections/${collectionName}/versioned`,
+      { data, comment }
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Validate document against schema
+   */
+  static async validateDocument(
+    collectionName: string,
+    data: any
+  ): Promise<DocumentValidationResult> {
+    const response = await apiService.post<ApiResponse<DocumentValidationResult>>(
+      `/database/collections/${collectionName}/validate`,
+      { data }
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Get document with relationships populated
+   */
+  static async getDocumentWithRelationships(
+    collectionName: string,
+    documentId: string,
+    populateDepth = 1
+  ) {
+    const response = await apiService.get<ApiResponse<any>>(
+      `/database/collections/${collectionName}/${documentId}?populate=true&depth=${populateDepth}`
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Search documents with advanced filtering
+   */
+  static async searchDocuments(
+    collectionName: string,
+    searchOptions: {
+      query?: string;
+      fields?: string[];
+      filters?: Record<string, any>;
+      sort?: Record<string, 1 | -1>;
+      page?: number;
+      limit?: number;
+      fuzzy?: boolean;
+    }
+  ) {
+    const response = await apiService.post<any>(
+      `/database/collections/${collectionName}/search`,
+      searchOptions
+    );
+    return {
+      documents: response.data.data,
+      pagination: response.data.pagination,
+      facets: response.data.facets
+    };
+  }
+
+  /**
+   * Get field statistics for a collection
+   */
+  static async getFieldStatistics(
+    collectionName: string,
+    fieldName: string
+  ): Promise<{
+    field: string;
+    type: string;
+    uniqueValues: number;
+    nullCount: number;
+    distribution: Array<{ value: any; count: number }>;
+    min?: any;
+    max?: any;
+    avg?: number;
+  }> {
+    const response = await apiService.get<ApiResponse<any>>(
+      `/database/collections/${collectionName}/fields/${fieldName}/stats`
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Suggest field values based on existing data
+   */
+  static async suggestFieldValues(
+    collectionName: string,
+    fieldName: string,
+    query?: string,
+    limit = 10
+  ): Promise<string[]> {
+    const params = new URLSearchParams();
+    if (query) params.append('query', query);
+    params.append('limit', limit.toString());
+
+    const response = await apiService.get<ApiResponse<string[]>>(
+      `/database/collections/${collectionName}/fields/${fieldName}/suggest?${params.toString()}`
+    );
+    return response.data.data;
   }
 }
