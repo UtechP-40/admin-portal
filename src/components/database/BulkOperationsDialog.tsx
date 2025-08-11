@@ -52,7 +52,7 @@ import {
   Assessment as AnalysisIcon,
   ViewModule as TemplateIcon
 } from '@mui/icons-material';
-import { GridRowId } from '@mui/x-data-grid';
+// GridRowId is typically string | number
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DatabaseService } from '../../services/database';
 import { BulkOperationsService } from '../../services/bulkOperations';
@@ -67,7 +67,7 @@ interface BulkOperationsDialogProps {
   open: boolean;
   onClose: () => void;
   collection: CollectionMetadata;
-  selectedRows: GridRowId[];
+  selectedRows: (string | number)[];
   onSuccess: () => void;
 }
 

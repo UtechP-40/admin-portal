@@ -28,10 +28,9 @@ import {
 import { 
   DataGrid, 
   GridToolbar,
-  GridColDef,
-  GridRowParams,
   GridActionsCellItem
 } from '@mui/x-data-grid';
+import type { GridColDef, GridRowParams } from '@mui/x-data-grid/models';
 import {
   Visibility as VisibilityIcon,
   Edit as EditIcon,

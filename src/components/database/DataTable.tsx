@@ -20,11 +20,9 @@ import {
 import {
   DataGrid,
   GridToolbar,
-  GridActionsCellItem,
-  GridColDef,
-  GridRowParams,
-  GridRowId
+  GridActionsCellItem
 } from '@mui/x-data-grid';
+import type { GridColDef, GridRowParams } from '@mui/x-data-grid/models';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -50,7 +48,7 @@ const DataTable: React.FC<DataTableProps> = ({ collection }) => {
   const [pageSize, setPageSize] = useState(25);
   const [sortModel, setSortModel] = useState<any[]>([]);
   const [filterModel, setFilterModel] = useState<any>({});
-  const [selectedRows, setSelectedRows] = useState<GridRowId[]>([]);
+  const [selectedRows, setSelectedRows] = useState<(string | number)[]>([]);
   
   // Dialog states
   const [editDialog, setEditDialog] = useState<{ open: boolean; document?: any; isNew?: boolean }>({
