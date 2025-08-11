@@ -49,14 +49,15 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   ExpandMore as ExpandMoreIcon,
-  Template as TemplateIcon,
-  Validate as ValidateIcon,
+  Description as TemplateIcon,
+  VerifiedUser as ValidateIcon,
   Link as LinkIcon,
   Upload as UploadIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { systemConfigurationApi, SystemSetting, SettingTemplate, SettingHistory, ValidationRule } from '../../services/systemConfigurationApi';
+import { systemConfigurationApi } from '../../services/systemConfigurationApi';
+import type { SystemSetting, SettingTemplate, SettingHistory, ValidationRule } from '../../types/systemConfiguration';
 
 interface SystemSettingsManagerProps {
   environment: string;

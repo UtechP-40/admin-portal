@@ -34,14 +34,13 @@ import {
 } from '@mui/material';
 import {
   DataGrid,
-  GridColDef,
-  GridRowParams,
   GridToolbarContainer,
   GridToolbarExport,
   GridToolbarFilterButton,
   GridToolbarColumnsButton,
   GridActionsCellItem,
 } from '@mui/x-data-grid';
+import type { GridColDef, GridRowParams } from '@mui/x-data-grid/models';
 import {
   Computer as ComputerIcon,
   Smartphone as SmartphoneIcon,

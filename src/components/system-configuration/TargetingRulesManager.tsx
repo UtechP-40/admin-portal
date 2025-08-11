@@ -41,7 +41,8 @@ import {
   Pause as PauseIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { systemConfigurationApi, type TargetingRule } from '../../services/systemConfigurationApi';
+import { systemConfigurationApi } from '../../services/systemConfigurationApi';
+import type { TargetingRule } from '../../types/systemConfiguration';
 
 interface TargetingRulesManagerProps {
   featureFlagKey: string;

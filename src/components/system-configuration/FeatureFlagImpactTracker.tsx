@@ -46,7 +46,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { systemConfigurationApi, FeatureFlagImpact } from '../../services/systemConfigurationApi';
+import { systemConfigurationApi } from '../../services/systemConfigurationApi';
+import type { FeatureFlagImpact } from '../../types/systemConfiguration';
 
 interface FeatureFlagImpactTrackerProps {
   featureFlagKey: string;

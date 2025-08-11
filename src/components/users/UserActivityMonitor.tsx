@@ -29,7 +29,7 @@ import {
   ListItemText,
   Divider
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import {
   Refresh as RefreshIcon,
   Timeline as TimelineIcon,

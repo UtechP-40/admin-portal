@@ -23,7 +23,8 @@ import {
   PlayArrow as RunIcon,
   Clear as ClearIcon
 } from '@mui/icons-material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid/models';
 import { useMutation } from '@tanstack/react-query';
 import { DatabaseService } from '../../services/database';
 import type { CollectionMetadata, QueryBuilderOptions } from '../../types/api';

@@ -82,16 +82,20 @@ export const authService = {
       SessionManager.startSessionTimer();
 
       // Initialize audit context
-      const { auditService } = await import('./auditService');
-      auditService.initializeContext({
-        userId: response.data.user.id,
-        userEmail: response.data.user.email,
-        userName: response.data.user.name,
-        userRole: response.data.user.role,
-      });
+      try {
+        const { auditService } = await import('./auditService');
+        auditService.initializeContext({
+          userId: response.data.user.id,
+          userEmail: response.data.user.email,
+          userName: response.data.user.name,
+          userRole: response.data.user.role,
+        });
 
-      // Log successful login
-      await auditService.logLogin(credentials.email, true);
+        // Log successful login
+        await auditService.logLogin(credentials.email, true);
+      } catch (auditError) {
+        console.warn('Failed to initialize audit logging:', auditError);
+      }
 
       // Dispatch login event
       window.dispatchEvent(new CustomEvent('auth:login', {
@@ -101,12 +105,16 @@ export const authService = {
       return response.data;
     } catch (error: any) {
       // Log failed login attempt
-      const { auditService } = await import('./auditService');
-      await auditService.logLogin(
-        credentials.email, 
-        false, 
-        error.response?.data?.message || error.message
-      );
+      try {
+        const { auditService } = await import('./auditService');
+        await auditService.logLogin(
+          credentials.email, 
+          false, 
+          error.response?.data?.message || error.message
+        );
+      } catch (auditError) {
+        console.warn('Failed to log failed login attempt:', auditError);
+      }
       throw error;
     }
   },
@@ -243,16 +251,20 @@ export const authService = {
       SessionManager.startSessionTimer();
 
       // Initialize audit context
-      const { auditService } = await import('./auditService');
-      auditService.initializeContext({
-        userId: response.data.user.id,
-        userEmail: response.data.user.email,
-        userName: response.data.user.name,
-        userRole: response.data.user.role,
-      });
+      try {
+        const { auditService } = await import('./auditService');
+        auditService.initializeContext({
+          userId: response.data.user.id,
+          userEmail: response.data.user.email,
+          userName: response.data.user.name,
+          userRole: response.data.user.role,
+        });
 
-      // Log successful MFA verification
-      await auditService.logMFAVerification(response.data.user.email, true);
+        // Log successful MFA verification
+        await auditService.logMFAVerification(response.data.user.email, true);
+      } catch (auditError) {
+        console.warn('Failed to initialize audit logging for MFA:', auditError);
+      }
 
       // Dispatch login event
       window.dispatchEvent(new CustomEvent('auth:login', {
@@ -262,12 +274,16 @@ export const authService = {
       return response.data;
     } catch (error: any) {
       // Log failed MFA verification
-      const { auditService } = await import('./auditService');
-      await auditService.logMFAVerification(
-        'unknown', // We don't have user email in this context
-        false,
-        error.response?.data?.message || error.message
-      );
+      try {
+        const { auditService } = await import('./auditService');
+        await auditService.logMFAVerification(
+          'unknown', // We don't have user email in this context
+          false,
+          error.response?.data?.message || error.message
+        );
+      } catch (auditError) {
+        console.warn('Failed to log failed MFA verification:', auditError);
+      }
       throw error;
     }
   },

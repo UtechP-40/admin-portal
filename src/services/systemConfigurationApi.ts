@@ -1352,7 +1352,7 @@ export const systemConfigurationApi = {
         type: string;
         driftType: 'value' | 'missing' | 'extra';
         severity: 'low' | 'medium' | 'high';
-        baselineValue: any;
+        baselineValue: unknown;
         currentValue: unknown;
       }>;
     }[];
@@ -1410,3 +1410,6 @@ export const systemConfigurationApi = {
     return response.data.data;
   },
 };
+
+// Explicit re-exports for better module resolution
+export type { ABTest, ABTestVariant, FeatureFlagImpact, FeatureFlag, SystemSetting, TargetingRule };

@@ -1,9 +1,2 @@
-// Export all type definitions
-export * from './api';
-export * from './auth';
-export * from './permissions';
+// Re-export all types for easier importing
 export * from './audit';
-export * from './database';
-export * from './testing';
-export * from './security';
-export * from './privacy';

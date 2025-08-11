@@ -57,7 +57,8 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon
 } from '@mui/icons-material';
-import { DataGrid, GridActionsCellItem, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
+import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid/models';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { userManagementApi } from '../../services/userManagementApi';
@@ -407,32 +408,35 @@ const RoleTemplateManager: React.FC<RoleTemplateManagerProps> = ({ open = true, 
       const children = roleHierarchy.hierarchy[roleId] || [];
 
       return (
-        <TreeItem
-          key={roleId}
-          nodeId={roleId}
-          label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1 }}>
+        <Box key={roleId} sx={{ ml: level * 2, mb: 1 }}>
+          <Card variant="outlined" sx={{ p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <SecurityIcon color="primary" />
-              <Typography variant="body2">{role.name}</Typography>
+              <Typography variant="body2" fontWeight="medium">{role.name}</Typography>
               <Chip label={`${role.permissions.length} perms`} size="small" />
               <Chip label={`${role.usageCount} users`} size="small" color="primary" />
             </Box>
-          }
-        >
-          {children.map(childId => buildTreeItems(childId, level + 1))}
-        </TreeItem>
+            {role.description && (
+              <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
+                {role.description}
+              </Typography>
+            )}
+          </Card>
+          {children.length > 0 && (
+            <Box sx={{ ml: 2, mt: 1 }}>
+              {children.map(childId => buildTreeItems(childId, level + 1))}
+            </Box>
+          )}
+        </Box>
       );
     };
 
     const rootRoles = roleHierarchy.roles.filter(r => !r.parentRoleId);
 
     return (
-      <TreeView
-        defaultCollapseIcon={<ExpandMoreIcon />}
-        defaultExpandIcon={<SecurityIcon />}
-      >
+      <Box>
         {rootRoles.map(role => buildTreeItems(role.id))}
-      </TreeView>
+      </Box>
     );
   };
 

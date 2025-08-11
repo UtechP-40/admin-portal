@@ -43,7 +43,8 @@ import {
   Error as ErrorIcon,
   Warning as WarningIcon
 } from '@mui/icons-material';
-import { DataGrid, GridActionsCellItem, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
+import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid/models';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userManagementApi } from '../../services/userManagementApi';
 import type { RoleTemplate, AdminUser } from '../../services/userManagementApi';

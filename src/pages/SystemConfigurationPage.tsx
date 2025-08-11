@@ -50,7 +50,8 @@ import {
   Analytics as AnalyticsIcon,
   Assessment as AssessmentIcon
 } from '@mui/icons-material';
-import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid/models';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { systemConfigurationApi } from '../services/api';

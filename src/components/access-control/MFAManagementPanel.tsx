@@ -33,14 +33,13 @@ import {
 } from '@mui/material';
 import {
   DataGrid,
-  GridColDef,
-  GridRowParams,
   GridToolbarContainer,
   GridToolbarExport,
   GridToolbarFilterButton,
   GridToolbarColumnsButton,
   GridActionsCellItem,
 } from '@mui/x-data-grid';
+import type { GridColDef, GridRowParams } from '@mui/x-data-grid/models';
 import {
   PhoneAndroid as PhoneIcon,
   Email as EmailIcon,

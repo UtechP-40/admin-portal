@@ -32,8 +32,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Slider,
-  DatePicker
+  Slider
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -50,7 +49,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker as MUIDatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { systemConfigurationApi, ABTest, ABTestVariant } from '../../services/systemConfigurationApi';
+import { systemConfigurationApi } from '../../services/systemConfigurationApi';
+import type { ABTest, ABTestVariant } from '../../types/systemConfiguration';
 
 interface ABTestManagerProps {
   featureFlagKey: string;
