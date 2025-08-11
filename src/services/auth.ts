@@ -3,6 +3,9 @@ import { apiService, TokenStorage, TokenManager } from './api';
 export interface LoginCredentials {
   email: string;
   password: string;
+  mfaCode?: string;
+  deviceId?: string;
+  trustDevice?: boolean;
 }
 
 export interface AuthResponse {
@@ -15,6 +18,9 @@ export interface AuthResponse {
     role: string;
     permissions: string[];
   };
+  mfaRequired?: boolean;
+  mfaToken?: string;
+  availableMethods?: string[];
 }
 
 export interface User {
@@ -217,6 +223,107 @@ export const authService = {
     password: string;
   }): Promise<{ message: string; email: string }> => {
     const response = await apiService.post('/auth/register', data);
+    return response.data;
+  },
+
+  // MFA Methods
+  verifyMFA: async (mfaToken: string, mfaCode: string, deviceId?: string, trustDevice?: boolean): Promise<AuthResponse> => {
+    try {
+      const response = await apiService.post<AuthResponse>('/auth/mfa/verify', {
+        mfaToken,
+        mfaCode,
+        deviceId,
+        trustDevice,
+      });
+
+      // Store tokens using secure storage
+      TokenStorage.setTokens(response.data.token, response.data.refreshToken);
+      
+      // Start session management
+      SessionManager.startSessionTimer();
+
+      // Initialize audit context
+      const { auditService } = await import('./auditService');
+      auditService.initializeContext({
+        userId: response.data.user.id,
+        userEmail: response.data.user.email,
+        userName: response.data.user.name,
+        userRole: response.data.user.role,
+      });
+
+      // Log successful MFA verification
+      await auditService.logMFAVerification(response.data.user.email, true);
+
+      // Dispatch login event
+      window.dispatchEvent(new CustomEvent('auth:login', {
+        detail: { user: response.data.user }
+      }));
+
+      return response.data;
+    } catch (error: any) {
+      // Log failed MFA verification
+      const { auditService } = await import('./auditService');
+      await auditService.logMFAVerification(
+        'unknown', // We don't have user email in this context
+        false,
+        error.response?.data?.message || error.message
+      );
+      throw error;
+    }
+  },
+
+  resendMFACode: async (mfaToken: string, method?: string): Promise<{ message: string }> => {
+    const response = await apiService.post('/auth/mfa/resend', {
+      mfaToken,
+      method,
+    });
+    return response.data;
+  },
+
+  // Session Management
+  getCurrentSession: async (): Promise<{
+    id: string;
+    ipAddress: string;
+    userAgent: string;
+    createdAt: string;
+    lastActivityAt: string;
+    expiresAt: string;
+    isCurrent: boolean;
+  }> => {
+    const response = await apiService.get('/auth/session/current');
+    return response.data;
+  },
+
+  // Device Trust Management
+  getTrustedDevices: async (): Promise<Array<{
+    id: string;
+    deviceName: string;
+    deviceFingerprint: string;
+    trustedAt: string;
+    lastUsedAt: string;
+    isActive: boolean;
+  }>> => {
+    const response = await apiService.get('/auth/trusted-devices');
+    return response.data;
+  },
+
+  revokeTrustedDevice: async (deviceId: string): Promise<void> => {
+    await apiService.delete(`/auth/trusted-devices/${deviceId}`);
+  },
+
+  // IP and Location Validation
+  validateAccess: async (): Promise<{
+    allowed: boolean;
+    reason?: string;
+    requiresMFA: boolean;
+    riskScore: number;
+    location?: {
+      country: string;
+      region: string;
+      city: string;
+    };
+  }> => {
+    const response = await apiService.post('/auth/validate-access');
     return response.data;
   },
 };

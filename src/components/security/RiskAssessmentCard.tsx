@@ -30,7 +30,7 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { RiskAssessment, RiskFactor } from '../../types/security';
+import type { RiskAssessment, RiskFactor } from '../../types/security';
 
 interface RiskAssessmentCardProps {
   riskAssessment: RiskAssessment;

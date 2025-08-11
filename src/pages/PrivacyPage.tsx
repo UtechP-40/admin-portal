@@ -38,7 +38,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { privacyService } from '../services/privacyService';
-import { DataProtectionSettings } from '../types/privacy';
+import type { DataProtectionSettings } from '../types/privacy';
 import ConsentManagementPanel from '../components/privacy/ConsentManagementPanel';
 import DataSubjectRequestsPanel from '../components/privacy/DataSubjectRequestsPanel';
 import DataInventoryPanel from '../components/privacy/DataInventoryPanel';
@@ -48,7 +48,7 @@ import EncryptionManagementPanel from '../components/privacy/EncryptionManagemen
 import DataAnonymizationPanel from '../components/privacy/DataAnonymizationPanel';
 import PrivacySettingsDialog from '../components/privacy/PrivacySettingsDialog';
 import { usePermissions } from '../hooks/usePermissions';
-import { Permission } from '../types/permissions';
+import type { Permission } from '../types/permissions';
 
 interface TabPanelProps {
   children?: React.ReactNode;

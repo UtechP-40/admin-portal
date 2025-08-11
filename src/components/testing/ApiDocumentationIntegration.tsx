@@ -48,7 +48,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { testingService } from '../../services/testingService';
-import { ApiDocumentation, ApiEndpoint, TestSuite, ApiTest } from '../../types/testing';
+import type { ApiDocumentation, ApiEndpoint, TestSuite, ApiTest } from '../../types/testing';
 
 export function ApiDocumentationIntegration() {
   const [selectedEndpoints, setSelectedEndpoints] = useState<string[]>([]);

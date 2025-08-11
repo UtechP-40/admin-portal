@@ -1,4 +1,5 @@
-import { Permission, Role, ROLE_PERMISSIONS } from '../types/permissions';
+import { ROLE_PERMISSIONS } from '../types/permissions';
+import type { Permission, Role } from '../types/permissions';
 import type { User } from '../types/auth';
 
 /**

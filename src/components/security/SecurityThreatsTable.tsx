@@ -25,12 +25,12 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
-import {
-  DataGrid,
+import { 
+  DataGrid, 
+  GridToolbar,
   GridColDef,
   GridRowParams,
-  GridToolbar,
-  GridActionsCellItem,
+  GridActionsCellItem
 } from '@mui/x-data-grid';
 import {
   Visibility as VisibilityIcon,
@@ -45,14 +45,14 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { securityService } from '../../services/securityService';
-import {
+import type {
   SecurityThreat,
   SecuritySeverity,
   ThreatStatus,
   ThreatCategory,
 } from '../../types/security';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Permission } from '../../types/permissions';
+import type { Permission } from '../../types/permissions';
 
 interface SecurityThreatsTableProps {
   threats: SecurityThreat[];

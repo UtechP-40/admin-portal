@@ -62,7 +62,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { testingService } from '../../services/testingService';
-import { LoadTestConfig, LoadTestResult, ApiTest } from '../../types/testing';
+import type { LoadTestConfig, LoadTestResult, ApiTest } from '../../types/testing';
 
 interface LoadTestTemplate {
   name: string;

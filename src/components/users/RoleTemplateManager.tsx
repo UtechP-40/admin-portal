@@ -32,8 +32,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  TreeView,
-  TreeItem,
+
   Menu,
   MenuItem as MenuItemComponent,
   Breadcrumbs,
@@ -58,12 +57,13 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon
 } from '@mui/icons-material';
-import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
-import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { userManagementApi, RoleTemplate } from '../../services/userManagementApi';
-import { Permission, PERMISSION_GROUPS, PERMISSION_DESCRIPTIONS } from '../../types/permissions';
+import { userManagementApi } from '../../services/userManagementApi';
+import type { RoleTemplate } from '../../services/userManagementApi';
+import { PERMISSION_GROUPS, PERMISSION_DESCRIPTIONS } from '../../types/permissions';
+import type { Permission } from '../../types/permissions';
 
 interface RoleTemplateManagerProps {
   open?: boolean;

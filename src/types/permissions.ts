@@ -50,6 +50,11 @@ export enum Permission {
   ADMIN_USERS = 'admin:users',
   ADMIN_ROLES = 'admin:roles',
   ADMIN_SYSTEM = 'admin:system',
+
+  // Access Control
+  MANAGE_USERS = 'access-control:manage-users',
+  MANAGE_SYSTEM_CONFIG = 'access-control:manage-system-config',
+  VIEW_SYSTEM_CONFIG = 'access-control:view-system-config',
 }
 
 // Role definitions
@@ -111,6 +116,11 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permission.SECURITY_VIEW,
     Permission.AUDIT_VIEW,
     Permission.AUDIT_EXPORT,
+
+    // Access Control
+    Permission.MANAGE_USERS,
+    Permission.MANAGE_SYSTEM_CONFIG,
+    Permission.VIEW_SYSTEM_CONFIG,
   ],
 
   [Role.MODERATOR]: [
@@ -235,6 +245,11 @@ export const PERMISSION_GROUPS = {
     Permission.ADMIN_ROLES,
     Permission.ADMIN_SYSTEM,
   ],
+  'Access Control': [
+    Permission.MANAGE_USERS,
+    Permission.MANAGE_SYSTEM_CONFIG,
+    Permission.VIEW_SYSTEM_CONFIG,
+  ],
 };
 
 // Permission descriptions for UI
@@ -281,4 +296,8 @@ export const PERMISSION_DESCRIPTIONS: Record<Permission, string> = {
   [Permission.ADMIN_USERS]: 'Manage admin user accounts',
   [Permission.ADMIN_ROLES]: 'Manage roles and permissions',
   [Permission.ADMIN_SYSTEM]: 'Manage system-level settings',
+
+  [Permission.MANAGE_USERS]: 'Manage user access control settings',
+  [Permission.MANAGE_SYSTEM_CONFIG]: 'Manage system access control configuration',
+  [Permission.VIEW_SYSTEM_CONFIG]: 'View system access control configuration',
 };

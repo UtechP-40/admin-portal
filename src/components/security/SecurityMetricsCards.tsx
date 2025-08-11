@@ -22,7 +22,8 @@ import {
   Info as InfoIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { SecurityMetrics, SecuritySeverity } from '../../types/security';
+import { SecuritySeverity } from '../../types/security';
+import type { SecurityMetrics } from '../../types/security';
 
 interface SecurityMetricsCardsProps {
   metrics: SecurityMetrics;

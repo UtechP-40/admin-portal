@@ -49,7 +49,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { securityService } from '../services/securityService';
-import { SecurityDashboardData, SecuritySeverity, SecurityEventStatus, ThreatStatus } from '../types/security';
+import { SecuritySeverity, SecurityEventStatus, ThreatStatus } from '../types/security';
+import type { SecurityDashboardData } from '../types/security';
 import SecurityEventsTable from '../components/security/SecurityEventsTable';
 import SecurityThreatsTable from '../components/security/SecurityThreatsTable';
 import SecurityAlertsPanel from '../components/security/SecurityAlertsPanel';
@@ -58,7 +59,7 @@ import SecurityMetricsCards from '../components/security/SecurityMetricsCards';
 import IntrusionDetectionPanel from '../components/security/IntrusionDetectionPanel';
 import SecurityConfigurationDialog from '../components/security/SecurityConfigurationDialog';
 import { usePermissions } from '../hooks/usePermissions';
-import { Permission } from '../types/permissions';
+import type { Permission } from '../types/permissions';
 
 interface TabPanelProps {
   children?: React.ReactNode;

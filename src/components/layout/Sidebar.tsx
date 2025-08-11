@@ -28,6 +28,7 @@ import {
   Tune as TuneIcon,
   Build as MaintenanceIcon,
   Security as SecurityIcon,
+  VpnLock as AccessControlIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 240;
@@ -74,6 +75,12 @@ const menuItems = [
     path: '/security', 
     label: 'Security', 
     icon: <SecurityIcon />,
+    badge: null,
+  },
+  { 
+    path: '/access-control', 
+    label: 'Access Control', 
+    icon: <AccessControlIcon />,
     badge: null,
   },
   { 

@@ -83,6 +83,36 @@ export const useAuth = () => {
     mutationFn: authService.register,
   });
 
+  // MFA verification mutation
+  const verifyMFAMutation = useMutation({
+    mutationFn: ({
+      mfaToken,
+      mfaCode,
+      deviceId,
+      trustDevice,
+    }: {
+      mfaToken: string;
+      mfaCode: string;
+      deviceId?: string;
+      trustDevice?: boolean;
+    }) => authService.verifyMFA(mfaToken, mfaCode, deviceId, trustDevice),
+    onSuccess: (data) => {
+      // Set user data in cache
+      queryClient.setQueryData(queryKeys.currentUser(), data.user);
+      // Invalidate and refetch user data
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth });
+    },
+    onError: (error) => {
+      console.error('MFA verification failed:', error);
+    },
+  });
+
+  // Resend MFA code mutation
+  const resendMFACodeMutation = useMutation({
+    mutationFn: ({ mfaToken, method }: { mfaToken: string; method?: string }) =>
+      authService.resendMFACode(mfaToken, method),
+  });
+
   const login = async (credentials: LoginCredentials) => {
     return loginMutation.mutateAsync(credentials);
   };
@@ -111,6 +141,14 @@ export const useAuth = () => {
     return registerMutation.mutateAsync(data);
   };
 
+  const verifyMFA = async (mfaToken: string, mfaCode: string, deviceId?: string, trustDevice?: boolean) => {
+    return verifyMFAMutation.mutateAsync({ mfaToken, mfaCode, deviceId, trustDevice });
+  };
+
+  const resendMFACode = async (mfaToken: string, method?: string) => {
+    return resendMFACodeMutation.mutateAsync({ mfaToken, method });
+  };
+
   return {
     // State
     user,
@@ -126,6 +164,8 @@ export const useAuth = () => {
     requestPasswordReset,
     resetPassword,
     register,
+    verifyMFA,
+    resendMFACode,
 
     // Mutation states
     isLoggingIn: loginMutation.isPending,
@@ -142,6 +182,12 @@ export const useAuth = () => {
     // Registration states
     isRegistering: registerMutation.isPending,
     registerError: registerMutation.error,
+
+    // MFA states
+    isVerifyingMFA: verifyMFAMutation.isPending,
+    verifyMFAError: verifyMFAMutation.error,
+    isResendingMFACode: resendMFACodeMutation.isPending,
+    resendMFACodeError: resendMFACodeMutation.error,
   };
 };
 

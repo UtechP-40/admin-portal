@@ -59,7 +59,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { testingService } from '../../services/testingService';
-import { 
+import type { 
   SocketTestSession, 
   SocketRecording, 
   RecordedSocketEvent, 

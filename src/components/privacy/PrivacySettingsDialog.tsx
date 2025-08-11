@@ -8,7 +8,7 @@ import {
   Alert,
   Typography,
 } from '@mui/material';
-import { DataProtectionSettings } from '../../types/privacy';
+import type { DataProtectionSettings } from '../../types/privacy';
 
 interface PrivacySettingsDialogProps {
   open: boolean;

@@ -1,5 +1,6 @@
 import { RoleTemplate } from '../services/userManagementApi';
-import { Permission, ROLE_PERMISSIONS, Role } from '../types/permissions';
+import { ROLE_PERMISSIONS } from '../types/permissions';
+import type { Permission, Role } from '../types/permissions';
 
 /**
  * Utility functions for role and permission management

@@ -1,5 +1,5 @@
 import { apiService } from './api';
-import {
+import type {
   TestSuite,
   ApiTest,
   TestExecution,

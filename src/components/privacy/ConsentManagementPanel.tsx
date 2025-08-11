@@ -41,9 +41,10 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { privacyService } from '../../services/privacyService';
-import { ConsentRecord, ConsentType } from '../../types/privacy';
+import { ConsentType } from '../../types/privacy';
+import type { ConsentRecord } from '../../types/privacy';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Permission } from '../../types/permissions';
+import type { Permission } from '../../types/permissions';
 
 const ConsentManagementPanel: React.FC = () => {
   const [page, setPage] = useState(0);

@@ -57,8 +57,19 @@ import {
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { analyticsService, LogEntry } from '../../services/analytics';
+import { analyticsService } from '../../services/analytics';
 
+export interface LogEntry {
+  id: string;
+  timestamp: Date;
+  level: 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+  message: string;
+  source: string;
+  category?: string;
+  correlationId?: string;
+  userId?: string;
+  metadata?: Record<string, any>;
+}
 export interface LogSearchQuery {
   query: string;
   level?: string;

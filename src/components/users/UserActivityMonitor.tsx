@@ -20,7 +20,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  DatePicker,
   Alert,
   LinearProgress,
   Avatar,
@@ -30,6 +29,7 @@ import {
   ListItemText,
   Divider
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import {
   Refresh as RefreshIcon,
   Timeline as TimelineIcon,

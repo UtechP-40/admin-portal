@@ -43,9 +43,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { securityService } from '../../services/securityService';
-import { SecurityAlert, SecuritySeverity } from '../../types/security';
+import { SecuritySeverity } from '../../types/security';
+import type { SecurityAlert } from '../../types/security';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Permission } from '../../types/permissions';
+import type { Permission } from '../../types/permissions';
 
 interface SecurityAlertsPanelProps {
   alerts: SecurityAlert[];

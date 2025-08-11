@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Permission, Role } from '../../types/permissions';
+import type { Permission, Role } from '../../types/permissions';
 import LoadingSpinner from './LoadingSpinner';
 import { Box, Typography, Alert } from '@mui/material';
 import { Lock as LockIcon } from '@mui/icons-material';

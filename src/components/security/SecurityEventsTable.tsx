@@ -25,10 +25,12 @@ import {
 } from '@mui/material';
 import {
   DataGrid,
-  GridColDef,
-  GridRowParams,
   GridToolbar,
   GridActionsCellItem,
+} from '@mui/x-data-grid';
+import type {
+  GridColDef,
+  GridRowParams,
   GridRowSelectionModel,
 } from '@mui/x-data-grid';
 import {
@@ -46,13 +48,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { securityService } from '../../services/securityService';
 import {
-  SecurityEvent,
   SecurityEventType,
   SecuritySeverity,
   SecurityEventStatus,
 } from '../../types/security';
+import type {
+  SecurityEvent,
+} from '../../types/security';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Permission } from '../../types/permissions';
+import type { Permission } from '../../types/permissions';
 
 interface SecurityEventsTableProps {
   height?: number;

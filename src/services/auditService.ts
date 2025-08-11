@@ -1,5 +1,5 @@
 import { apiService } from './api';
-import {
+import type {
   AuditEvent,
   AuditEventType,
   AuditCategory,
@@ -167,6 +167,21 @@ export const auditService = {
       description: `User ${userEmail} logged out`,
       success: true,
       metadata: { userEmail },
+    });
+  },
+
+  logMFAVerification: async (userEmail: string, success: boolean, errorMessage?: string, method?: string) => {
+    await auditLogger.logEvent({
+      eventType: success ? AuditEventType.LOGIN : AuditEventType.LOGIN_FAILED,
+      category: AuditCategory.AUTHENTICATION,
+      severity: success ? AuditSeverity.LOW : AuditSeverity.MEDIUM,
+      action: 'mfa_verification',
+      description: success 
+        ? `User ${userEmail} completed MFA verification successfully${method ? ` using ${method}` : ''}`
+        : `Failed MFA verification for ${userEmail}${method ? ` using ${method}` : ''}`,
+      success,
+      errorMessage,
+      metadata: { userEmail, method, mfaVerification: true },
     });
   },
 

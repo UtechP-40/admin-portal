@@ -32,7 +32,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { securityService } from '../../services/securityService';
-import { SecurityConfiguration } from '../../types/security';
+import type { SecurityConfiguration } from '../../types/security';
 
 interface SecurityConfigurationDialogProps {
   open: boolean;

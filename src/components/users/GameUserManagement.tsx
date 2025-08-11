@@ -36,8 +36,7 @@ import {
   Flag as FlagIcon,
   Security as SecurityIcon
 } from '@mui/icons-material';
-import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
-import type { GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userManagementApi } from '../../services/userManagementApi';
 import UserBehaviorAnalytics from './UserBehaviorAnalytics';

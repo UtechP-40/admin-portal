@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useAuth } from './useAuth';
-import { Permission, Role } from '../types/permissions';
+import type { Permission, Role } from '../types/permissions';
 import { createPermissionChecker } from '../utils/permissions';
 
 /**

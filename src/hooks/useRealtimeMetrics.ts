@@ -1,6 +1,37 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { websocketService, RealtimeMetrics, MetricAlert } from '../services/websocketService';
-import { analyticsService, DashboardMetrics } from '../services/analytics';
+import { websocketService } from '../services/websocketService';
+import type {
+  RealtimeMetrics,
+  MetricAlert,
+} from '../services/websocketService';
+import { analyticsService } from '../services/analytics';
+
+export interface DashboardMetrics {
+  overview: {
+    totalEvents: number;
+    uniqueUsers: number;
+    activeUsers: number;
+    errorRate: number;
+    avgResponseTime: number;
+    systemUptime: number;
+  };
+  games: {
+    GAME_START: number;
+    GAME_END: number;
+  };
+  errors: Record<string, any>;
+  performance: Record<string, any>;
+  engagement: Record<string, unknown>;
+  system: {
+    memoryUsage: number;
+  };
+  timeRange: {
+    startDate: Date;
+    endDate: Date;
+    granularity: string;
+  };
+  generatedAt: Date;
+}
 
 export interface RealtimeMetricsState {
   metrics: DashboardMetrics | null;
@@ -38,48 +69,51 @@ export const useRealtimeMetrics = (options: UseRealtimeMetricsOptions = {}) => {
   const unsubscribeAlertsRef = useRef<(() => void) | null>(null);
 
   // Convert realtime metrics to dashboard metrics format
-  const convertRealtimeMetrics = useCallback((realtimeMetrics: RealtimeMetrics): DashboardMetrics => {
-    return {
-      overview: {
-        totalEvents: realtimeMetrics.totalEvents,
-        uniqueUsers: realtimeMetrics.uniqueUsers,
-        activeUsers: realtimeMetrics.activeUsers,
-        errorRate: realtimeMetrics.errorRate,
-        avgResponseTime: realtimeMetrics.avgResponseTime,
-        systemUptime: realtimeMetrics.systemUptime,
-      },
-      games: {
-        GAME_START: realtimeMetrics.activeGames,
-        GAME_END: 0, // This would need to be tracked separately
-      },
-      errors: {},
-      performance: {},
-      engagement: {},
-      system: {
-        memoryUsage: realtimeMetrics.memoryUsage,
-      },
-      timeRange: {
-        startDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
-        endDate: new Date(),
-        granularity: 'hour',
-      },
-      generatedAt: realtimeMetrics.timestamp,
-    };
-  }, []);
+  const convertRealtimeMetrics = useCallback(
+    (realtimeMetrics: RealtimeMetrics): DashboardMetrics => {
+      return {
+        overview: {
+          totalEvents: realtimeMetrics.totalEvents,
+          uniqueUsers: realtimeMetrics.uniqueUsers,
+          activeUsers: realtimeMetrics.activeUsers,
+          errorRate: realtimeMetrics.errorRate,
+          avgResponseTime: realtimeMetrics.avgResponseTime,
+          systemUptime: realtimeMetrics.systemUptime,
+        },
+        games: {
+          GAME_START: realtimeMetrics.activeGames,
+          GAME_END: 0, // This would need to be tracked separately
+        },
+        errors: {},
+        performance: {},
+        engagement: {},
+        system: {
+          memoryUsage: realtimeMetrics.memoryUsage?.heapUsed || 0,
+        },
+        timeRange: {
+          startDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+          endDate: new Date(),
+          granularity: 'hour',
+        },
+        generatedAt: realtimeMetrics.timestamp,
+      };
+    },
+    []
+  );
 
   // Fallback polling function
   const fetchMetricsFallback = useCallback(async () => {
     try {
       const endDate = new Date();
       const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000); // Last 24 hours
-      
+
       const metrics = await analyticsService.getDashboardMetrics({
         startDate,
         endDate,
         granularity: 'hour',
       });
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         metrics,
         lastUpdate: new Date(),
@@ -88,9 +122,10 @@ export const useRealtimeMetrics = (options: UseRealtimeMetricsOptions = {}) => {
       }));
     } catch (error) {
       console.error('Failed to fetch metrics fallback:', error);
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Failed to fetch metrics',
+        error:
+          error instanceof Error ? error.message : 'Failed to fetch metrics',
         isLoading: false,
       }));
     }
@@ -110,57 +145,63 @@ export const useRealtimeMetrics = (options: UseRealtimeMetricsOptions = {}) => {
         if (!mounted) return;
 
         // Subscribe to metrics updates
-        unsubscribeMetricsRef.current = websocketService.subscribeToMetrics((realtimeMetrics: RealtimeMetrics) => {
-          if (!mounted) return;
+        unsubscribeMetricsRef.current = websocketService.subscribeToMetrics(
+          (realtimeMetrics: RealtimeMetrics) => {
+            if (!mounted) return;
 
-          const dashboardMetrics = convertRealtimeMetrics(realtimeMetrics);
-          setState(prev => ({
-            ...prev,
-            metrics: dashboardMetrics,
-            lastUpdate: new Date(),
-            error: null,
-            isLoading: false,
-          }));
-        });
+            const dashboardMetrics = convertRealtimeMetrics(realtimeMetrics);
+            setState((prev) => ({
+              ...prev,
+              metrics: dashboardMetrics,
+              lastUpdate: new Date(),
+              error: null,
+              isLoading: false,
+            }));
+          }
+        );
 
         // Subscribe to alerts
-        unsubscribeAlertsRef.current = websocketService.subscribeToAlerts((alert: MetricAlert) => {
-          if (!mounted) return;
+        unsubscribeAlertsRef.current = websocketService.subscribeToAlerts(
+          (alert: MetricAlert) => {
+            if (!mounted) return;
 
-          setState(prev => ({
-            ...prev,
-            alerts: [alert, ...prev.alerts.slice(0, maxAlerts - 1)],
-          }));
-        });
+            setState((prev) => ({
+              ...prev,
+              alerts: [alert, ...prev.alerts.slice(0, maxAlerts - 1)],
+            }));
+          }
+        );
 
         // Listen for connection status changes
         websocketService.on('connected', () => {
           if (!mounted) return;
-          setState(prev => ({ ...prev, isConnected: true, error: null }));
+          setState((prev) => ({ ...prev, isConnected: true, error: null }));
         });
 
         websocketService.on('disconnected', () => {
           if (!mounted) return;
-          setState(prev => ({ ...prev, isConnected: false }));
+          setState((prev) => ({ ...prev, isConnected: false }));
         });
 
         websocketService.on('error', (error: Error) => {
           if (!mounted) return;
-          setState(prev => ({ 
-            ...prev, 
+          setState((prev) => ({
+            ...prev,
             error: error.message,
             isConnected: false,
           }));
         });
 
-        setState(prev => ({ ...prev, isConnected: websocketService.connected }));
-
+        setState((prev) => ({
+          ...prev,
+          isConnected: websocketService.connected,
+        }));
       } catch (error) {
         console.error('Failed to setup WebSocket connection:', error);
-        
+
         if (!mounted) return;
 
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           isConnected: false,
           error: error instanceof Error ? error.message : 'Connection failed',
@@ -168,7 +209,10 @@ export const useRealtimeMetrics = (options: UseRealtimeMetricsOptions = {}) => {
 
         // Start fallback polling
         fetchMetricsFallback();
-        fallbackIntervalRef.current = setInterval(fetchMetricsFallback, fallbackInterval);
+        fallbackIntervalRef.current = setInterval(
+          fetchMetricsFallback,
+          fallbackInterval
+        );
       }
     };
 
@@ -176,13 +220,13 @@ export const useRealtimeMetrics = (options: UseRealtimeMetricsOptions = {}) => {
 
     return () => {
       mounted = false;
-      
+
       // Cleanup subscriptions
       if (unsubscribeMetricsRef.current) {
         unsubscribeMetricsRef.current();
         unsubscribeMetricsRef.current = null;
       }
-      
+
       if (unsubscribeAlertsRef.current) {
         unsubscribeAlertsRef.current();
         unsubscribeAlertsRef.current = null;
@@ -194,12 +238,18 @@ export const useRealtimeMetrics = (options: UseRealtimeMetricsOptions = {}) => {
         fallbackIntervalRef.current = null;
       }
     };
-  }, [enabled, convertRealtimeMetrics, fetchMetricsFallback, fallbackInterval, maxAlerts]);
+  }, [
+    enabled,
+    convertRealtimeMetrics,
+    fetchMetricsFallback,
+    fallbackInterval,
+    maxAlerts,
+  ]);
 
   // Manual refresh function
   const refresh = useCallback(async () => {
-    setState(prev => ({ ...prev, isLoading: true }));
-    
+    setState((prev) => ({ ...prev, isLoading: true }));
+
     if (websocketService.connected) {
       // Request fresh metrics from WebSocket
       websocketService.send('metrics:refresh');
@@ -211,14 +261,14 @@ export const useRealtimeMetrics = (options: UseRealtimeMetricsOptions = {}) => {
 
   // Clear alerts
   const clearAlerts = useCallback(() => {
-    setState(prev => ({ ...prev, alerts: [] }));
+    setState((prev) => ({ ...prev, alerts: [] }));
   }, []);
 
   // Dismiss specific alert
   const dismissAlert = useCallback((alertId: string) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      alerts: prev.alerts.filter(alert => alert.id !== alertId),
+      alerts: prev.alerts.filter((alert) => alert.id !== alertId),
     }));
   }, []);
 

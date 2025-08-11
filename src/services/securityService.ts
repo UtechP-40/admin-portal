@@ -1,5 +1,11 @@
 import { apiService } from './api';
 import {
+  SecurityEventType,
+  SecuritySeverity,
+  SecurityEventStatus,
+  ThreatStatus
+} from '../types/security';
+import type {
   SecurityEvent,
   SecurityThreat,
   SecurityMetrics,
@@ -9,10 +15,6 @@ import {
   SecurityConfiguration,
   IntrusionDetectionRule,
   SecurityAuditLog,
-  SecurityEventType,
-  SecuritySeverity,
-  SecurityEventStatus,
-  ThreatStatus
 } from '../types/security';
 
 export const securityService = {

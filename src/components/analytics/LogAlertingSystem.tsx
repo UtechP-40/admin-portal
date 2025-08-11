@@ -62,7 +62,17 @@ import {
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { analyticsService, LogEntry } from '../../services/analytics';
+import { analyticsService } from '../../services/analytics';
+
+export interface LogEntry {
+  id: string;
+  timestamp: Date;
+  level: 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+  message: string;
+  source?: string;
+  category?: string;
+  metadata?: Record<string, any>;
+}
 
 export interface LogAlertRule {
   id: string;
@@ -172,7 +182,10 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
   const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<LogAlertRule | null>(null);
   const [testingRule, setTestingRule] = useState<LogAlertRule | null>(null);
-  const [testResults, setTestResults] = useState<{ logs: LogEntry[]; value: number } | null>(null);
+  const [testResults, setTestResults] = useState<{
+    logs: LogEntry[];
+    value: number;
+  } | null>(null);
 
   // Load rules and alerts on component mount
   useEffect(() => {
@@ -209,8 +222,8 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
   };
 
   const evaluateRules = async () => {
-    const activeRules = rules.filter(rule => rule.enabled);
-    
+    const activeRules = rules.filter((rule) => rule.enabled);
+
     for (const rule of activeRules) {
       try {
         // Check if rule is within schedule
@@ -225,8 +238,10 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
 
         // Execute query
         const endTime = new Date();
-        const startTime = new Date(endTime.getTime() - rule.conditions.timeWindow * 60 * 1000);
-        
+        const startTime = new Date(
+          endTime.getTime() - rule.conditions.timeWindow * 60 * 1000
+        );
+
         const logs = await analyticsService.searchLogs(rule.query, {
           startTime,
           endTime,
@@ -237,21 +252,28 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
         const value = calculateAggregation(logs, rule.conditions.aggregation);
 
         // Check if threshold is met
-        if (evaluateCondition(value, rule.conditions.threshold, rule.conditions.operator)) {
+        if (
+          evaluateCondition(
+            value,
+            rule.conditions.threshold,
+            rule.conditions.operator
+          )
+        ) {
           await triggerAlert(rule, logs, value);
         }
-
       } catch (error) {
         console.error(`Failed to evaluate rule ${rule.id}:`, error);
       }
     }
   };
 
-  const isWithinSchedule = (schedule: NonNullable<LogAlertRule['schedule']>) => {
+  const isWithinSchedule = (
+    schedule: NonNullable<LogAlertRule['schedule']>
+  ) => {
     const now = new Date();
     const currentDay = now.getDay();
     const currentTime = now.getHours() * 60 + now.getMinutes();
-    
+
     if (!schedule.days.includes(currentDay)) {
       return false;
     }
@@ -266,7 +288,7 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
 
   const isInCooldown = (rule: LogAlertRule) => {
     if (!rule.lastTriggered) return false;
-    
+
     const cooldownMs = rule.notifications.cooldownMinutes * 60 * 1000;
     return Date.now() - rule.lastTriggered.getTime() < cooldownMs;
   };
@@ -279,34 +301,59 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
         return logs.length / 60; // per minute
       case 'avg':
         // For demo purposes, assume logs have a numeric value in metadata
-        const values = logs.map(log => Number(log.metadata?.value || 0)).filter(v => !isNaN(v));
-        return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+        const values = logs
+          .map((log) => Number(log.metadata?.value || 0))
+          .filter((v) => !isNaN(v));
+        return values.length > 0
+          ? values.reduce((a, b) => a + b, 0) / values.length
+          : 0;
       case 'sum':
-        return logs.map(log => Number(log.metadata?.value || 0)).reduce((a, b) => a + b, 0);
+        return logs
+          .map((log) => Number(log.metadata?.value || 0))
+          .reduce((a, b) => a + b, 0);
       case 'min':
-        const minValues = logs.map(log => Number(log.metadata?.value || 0)).filter(v => !isNaN(v));
+        const minValues = logs
+          .map((log) => Number(log.metadata?.value || 0))
+          .filter((v) => !isNaN(v));
         return minValues.length > 0 ? Math.min(...minValues) : 0;
       case 'max':
-        const maxValues = logs.map(log => Number(log.metadata?.value || 0)).filter(v => !isNaN(v));
+        const maxValues = logs
+          .map((log) => Number(log.metadata?.value || 0))
+          .filter((v) => !isNaN(v));
         return maxValues.length > 0 ? Math.max(...maxValues) : 0;
       default:
         return logs.length;
     }
   };
 
-  const evaluateCondition = (value: number, threshold: number, operator: string) => {
+  const evaluateCondition = (
+    value: number,
+    threshold: number,
+    operator: string
+  ) => {
     switch (operator) {
-      case 'gt': return value > threshold;
-      case 'gte': return value >= threshold;
-      case 'lt': return value < threshold;
-      case 'lte': return value <= threshold;
-      case 'eq': return value === threshold;
-      case 'ne': return value !== threshold;
-      default: return false;
+      case 'gt':
+        return value > threshold;
+      case 'gte':
+        return value >= threshold;
+      case 'lt':
+        return value < threshold;
+      case 'lte':
+        return value <= threshold;
+      case 'eq':
+        return value === threshold;
+      case 'ne':
+        return value !== threshold;
+      default:
+        return false;
     }
   };
 
-  const triggerAlert = async (rule: LogAlertRule, matchingLogs: LogEntry[], value: number) => {
+  const triggerAlert = async (
+    rule: LogAlertRule,
+    matchingLogs: LogEntry[],
+    value: number
+  ) => {
     const alert: LogAlert = {
       id: `alert_${Date.now()}`,
       ruleId: rule.id,
@@ -324,7 +371,7 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
     };
 
     // Add to alerts list
-    setAlerts(prev => [alert, ...prev]);
+    setAlerts((prev) => [alert, ...prev]);
 
     // Update rule trigger count and last triggered
     const updatedRule = {
@@ -332,7 +379,7 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
       lastTriggered: new Date(),
       triggerCount: rule.triggerCount + 1,
     };
-    setRules(prev => prev.map(r => r.id === rule.id ? updatedRule : r));
+    setRules((prev) => prev.map((r) => (r.id === rule.id ? updatedRule : r)));
 
     // Send notifications
     await sendNotifications(alert, rule);
@@ -351,19 +398,31 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
 
         switch (channel) {
           case 'email':
-            success = await sendEmailNotification(alert, rule.notifications.recipients);
+            success = await sendEmailNotification(
+              alert,
+              rule.notifications.recipients
+            );
             break;
           case 'webhook':
             if (rule.notifications.webhookUrl) {
-              success = await sendWebhookNotification(alert, rule.notifications.webhookUrl);
+              success = await sendWebhookNotification(
+                alert,
+                rule.notifications.webhookUrl
+              );
             }
             break;
           case 'sms':
-            success = await sendSmsNotification(alert, rule.notifications.recipients);
+            success = await sendSmsNotification(
+              alert,
+              rule.notifications.recipients
+            );
             break;
           case 'slack':
             if (rule.notifications.slackChannel) {
-              success = await sendSlackNotification(alert, rule.notifications.slackChannel);
+              success = await sendSlackNotification(
+                alert,
+                rule.notifications.slackChannel
+              );
             }
             break;
         }
@@ -374,7 +433,6 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
           success,
           error,
         });
-
       } catch (err) {
         notifications.push({
           channel,
@@ -386,18 +444,26 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
     }
 
     // Update alert with notification results
-    setAlerts(prev => prev.map(a => 
-      a.id === alert.id ? { ...a, notificationsSent: notifications } : a
-    ));
+    setAlerts((prev) =>
+      prev.map((a) =>
+        a.id === alert.id ? { ...a, notificationsSent: notifications } : a
+      )
+    );
   };
 
-  const sendEmailNotification = async (alert: LogAlert, recipients: string[]) => {
+  const sendEmailNotification = async (
+    alert: LogAlert,
+    recipients: string[]
+  ) => {
     // Mock email sending
     console.log('Sending email notification:', { alert, recipients });
     return true;
   };
 
-  const sendWebhookNotification = async (alert: LogAlert, webhookUrl: string) => {
+  const sendWebhookNotification = async (
+    alert: LogAlert,
+    webhookUrl: string
+  ) => {
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -433,7 +499,9 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
     setRuleDialogOpen(true);
   };
 
-  const handleSaveRule = async (rule: Omit<LogAlertRule, 'id' | 'createdAt' | 'updatedAt' | 'triggerCount'>) => {
+  const handleSaveRule = async (
+    rule: Omit<LogAlertRule, 'id' | 'createdAt' | 'updatedAt' | 'triggerCount'>
+  ) => {
     try {
       if (editingRule) {
         // Update existing rule
@@ -442,9 +510,11 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
           ...rule,
           updatedAt: new Date(),
         };
-        
+
         await analyticsService.updateAlertRule(editingRule.id, updatedRule);
-        setRules(prev => prev.map(r => r.id === editingRule.id ? updatedRule : r));
+        setRules((prev) =>
+          prev.map((r) => (r.id === editingRule.id ? updatedRule : r))
+        );
         onRuleUpdated?.(updatedRule);
       } else {
         // Create new rule
@@ -455,12 +525,12 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
           updatedAt: new Date(),
           triggerCount: 0,
         };
-        
+
         await analyticsService.createAlertRule(newRule);
-        setRules(prev => [...prev, newRule]);
+        setRules((prev) => [...prev, newRule]);
         onRuleUpdated?.(newRule);
       }
-      
+
       setRuleDialogOpen(false);
       setEditingRule(null);
     } catch (error) {
@@ -471,7 +541,7 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
   const handleDeleteRule = async (ruleId: string) => {
     try {
       await analyticsService.deleteAlertRule(ruleId);
-      setRules(prev => prev.filter(r => r.id !== ruleId));
+      setRules((prev) => prev.filter((r) => r.id !== ruleId));
     } catch (error) {
       console.error('Failed to delete rule:', error);
     }
@@ -481,8 +551,10 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
     setTestingRule(rule);
     try {
       const endTime = new Date();
-      const startTime = new Date(endTime.getTime() - rule.conditions.timeWindow * 60 * 1000);
-      
+      const startTime = new Date(
+        endTime.getTime() - rule.conditions.timeWindow * 60 * 1000
+      );
+
       const logs = await analyticsService.searchLogs(rule.query, {
         startTime,
         endTime,
@@ -498,24 +570,28 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
   };
 
   const handleAcknowledgeAlert = (alertId: string) => {
-    setAlerts(prev => prev.map(alert => 
-      alert.id === alertId 
-        ? { 
-            ...alert, 
-            acknowledged: true, 
-            acknowledgedAt: new Date(),
-            acknowledgedBy: 'current_user' // In real app, get from auth context
-          }
-        : alert
-    ));
+    setAlerts((prev) =>
+      prev.map((alert) =>
+        alert.id === alertId
+          ? {
+              ...alert,
+              acknowledged: true,
+              acknowledgedAt: new Date(),
+              acknowledgedBy: 'current_user', // In real app, get from auth context
+            }
+          : alert
+      )
+    );
   };
 
   const handleResolveAlert = (alertId: string) => {
-    setAlerts(prev => prev.map(alert => 
-      alert.id === alertId 
-        ? { ...alert, resolved: true, resolvedAt: new Date() }
-        : alert
-    ));
+    setAlerts((prev) =>
+      prev.map((alert) =>
+        alert.id === alertId
+          ? { ...alert, resolved: true, resolvedAt: new Date() }
+          : alert
+      )
+    );
   };
 
   const getSeverityIcon = (severity: string) => {
@@ -544,16 +620,21 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
     }
   };
 
-  const unacknowledgedAlerts = alerts.filter(alert => !alert.acknowledged && !alert.resolved);
-  const activeRules = rules.filter(rule => rule.enabled);
+  const unacknowledgedAlerts = alerts.filter(
+    (alert) => !alert.acknowledged && !alert.resolved
+  );
+  const activeRules = rules.filter((rule) => rule.enabled);
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h5">
-            Log Alerting System
-          </Typography>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
+          <Typography variant="h5">Log Alerting System</Typography>
           <Box display="flex" alignItems="center" gap={2}>
             <Badge badgeContent={unacknowledgedAlerts.length} color="error">
               <NotificationsActive />
@@ -572,7 +653,10 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
                   <Box display="flex" alignItems="center" gap={1}>
                     <Notifications />
                     Active Alerts
-                    <Badge badgeContent={unacknowledgedAlerts.length} color="error" />
+                    <Badge
+                      badgeContent={unacknowledgedAlerts.length}
+                      color="error"
+                    />
                   </Box>
                 }
               />
@@ -609,13 +693,24 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
             <Grid container spacing={3}>
               {unacknowledgedAlerts.map((alert) => (
                 <Grid item xs={12} key={alert.id}>
-                  <Card sx={{ border: `2px solid ${getSeverityColor(alert.severity)}` }}>
+                  <Card
+                    sx={{
+                      border: `2px solid ${getSeverityColor(alert.severity)}`,
+                    }}
+                  >
                     <CardContent>
-                      <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="start"
+                        mb={2}
+                      >
                         <Box display="flex" alignItems="center" gap={2}>
                           {getSeverityIcon(alert.severity)}
                           <Box>
-                            <Typography variant="h6">{alert.ruleName}</Typography>
+                            <Typography variant="h6">
+                              {alert.ruleName}
+                            </Typography>
                             <Typography variant="body2" color="text.secondary">
                               Triggered: {alert.triggeredAt.toLocaleString()}
                             </Typography>
@@ -627,11 +722,11 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
                           size="small"
                         />
                       </Box>
-                      
+
                       <Typography variant="body1" gutterBottom>
                         {alert.message}
                       </Typography>
-                      
+
                       <Box display="flex" gap={2} mb={2}>
                         <Typography variant="body2">
                           <strong>Value:</strong> {alert.value}
@@ -640,7 +735,8 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
                           <strong>Threshold:</strong> {alert.threshold}
                         </Typography>
                         <Typography variant="body2">
-                          <strong>Matching Logs:</strong> {alert.matchingLogs.length}
+                          <strong>Matching Logs:</strong>{' '}
+                          {alert.matchingLogs.length}
                         </Typography>
                       </Box>
 
@@ -653,14 +749,16 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
                           </AccordionSummary>
                           <AccordionDetails>
                             <List dense>
-                              {alert.matchingLogs.slice(0, 5).map((log, index) => (
-                                <ListItem key={index}>
-                                  <ListItemText
-                                    primary={log.message}
-                                    secondary={`${log.level} - ${new Date(log.timestamp).toLocaleString()}`}
-                                  />
-                                </ListItem>
-                              ))}
+                              {alert.matchingLogs
+                                .slice(0, 5)
+                                .map((log, index) => (
+                                  <ListItem key={index}>
+                                    <ListItemText
+                                      primary={log.message}
+                                      secondary={`${log.level} - ${new Date(log.timestamp).toLocaleString()}`}
+                                    />
+                                  </ListItem>
+                                ))}
                             </List>
                           </AccordionDetails>
                         </Accordion>
@@ -685,11 +783,13 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
                   </Card>
                 </Grid>
               ))}
-              
+
               {unacknowledgedAlerts.length === 0 && (
                 <Grid item xs={12}>
                   <Box textAlign="center" py={4}>
-                    <CheckCircle sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+                    <CheckCircle
+                      sx={{ fontSize: 48, color: 'success.main', mb: 2 }}
+                    />
                     <Typography variant="h6" color="text.secondary">
                       No Active Alerts
                     </Typography>
@@ -704,7 +804,12 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
 
           {/* Alert Rules Tab */}
           <TabPanel value={activeTab} index={1}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={3}
+            >
               <Typography variant="h6">Alert Rules</Typography>
               <Button
                 variant="contained"
@@ -720,7 +825,12 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
                 <Grid item xs={12} md={6} key={rule.id}>
                   <Card>
                     <CardContent>
-                      <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="start"
+                        mb={2}
+                      >
                         <Box>
                           <Typography variant="h6">{rule.name}</Typography>
                           <Typography variant="body2" color="text.secondary">
@@ -736,22 +846,37 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
                           <Switch
                             checked={rule.enabled}
                             onChange={(e) => {
-                              const updatedRule = { ...rule, enabled: e.target.checked };
-                              setRules(prev => prev.map(r => r.id === rule.id ? updatedRule : r));
-                              analyticsService.updateAlertRule(rule.id, updatedRule);
+                              const updatedRule = {
+                                ...rule,
+                                enabled: e.target.checked,
+                              };
+                              setRules((prev) =>
+                                prev.map((r) =>
+                                  r.id === rule.id ? updatedRule : r
+                                )
+                              );
+                              analyticsService.updateAlertRule(
+                                rule.id,
+                                updatedRule
+                              );
                             }}
                             size="small"
                           />
                         </Box>
                       </Box>
-                      
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 2 }}>
+
+                      <Typography
+                        variant="body2"
+                        sx={{ fontFamily: 'monospace', mb: 2 }}
+                      >
                         {rule.query}
                       </Typography>
-                      
+
                       <Box display="flex" gap={2} mb={2}>
                         <Typography variant="caption">
-                          Threshold: {rule.conditions.aggregation}({rule.conditions.operator} {rule.conditions.threshold})
+                          Threshold: {rule.conditions.aggregation}(
+                          {rule.conditions.operator} {rule.conditions.threshold}
+                          )
                         </Typography>
                         <Typography variant="caption">
                           Window: {rule.conditions.timeWindow}m
@@ -763,7 +888,9 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
 
                       <Box display="flex" gap={1} flexWrap="wrap">
                         {rule.notifications.channels.map((channel) => {
-                          const channelInfo = NOTIFICATION_CHANNELS.find(c => c.value === channel);
+                          const channelInfo = NOTIFICATION_CHANNELS.find(
+                            (c) => c.value === channel
+                          );
                           return (
                             <Chip
                               key={channel}
@@ -807,14 +934,21 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
 
             {rules.length === 0 && (
               <Box textAlign="center" py={4}>
-                <Warning sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                <Warning
+                  sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   No Alert Rules Configured
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mb={3}>
-                  Create alert rules to monitor your logs and get notified of important events.
+                  Create alert rules to monitor your logs and get notified of
+                  important events.
                 </Typography>
-                <Button variant="contained" startIcon={<Add />} onClick={handleCreateRule}>
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={handleCreateRule}
+                >
                   Create Your First Rule
                 </Button>
               </Box>
@@ -829,28 +963,38 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
             <List>
               {alerts.map((alert) => (
                 <ListItem key={alert.id} divider>
-                  <ListItemIcon>
-                    {getSeverityIcon(alert.severity)}
-                  </ListItemIcon>
+                  <ListItemIcon>{getSeverityIcon(alert.severity)}</ListItemIcon>
                   <ListItemText
                     primary={alert.ruleName}
                     secondary={
                       <Box>
-                        <Typography variant="body2">
-                          {alert.message}
-                        </Typography>
+                        <Typography variant="body2">{alert.message}</Typography>
                         <Typography variant="caption">
                           {alert.triggeredAt.toLocaleString()}
-                          {alert.acknowledged && ` • Acknowledged ${alert.acknowledgedAt?.toLocaleString()}`}
-                          {alert.resolved && ` • Resolved ${alert.resolvedAt?.toLocaleString()}`}
+                          {alert.acknowledged &&
+                            ` • Acknowledged ${alert.acknowledgedAt?.toLocaleString()}`}
+                          {alert.resolved &&
+                            ` • Resolved ${alert.resolvedAt?.toLocaleString()}`}
                         </Typography>
                       </Box>
                     }
                   />
                   <ListItemSecondaryAction>
                     <Chip
-                      label={alert.resolved ? 'Resolved' : alert.acknowledged ? 'Acknowledged' : 'Active'}
-                      color={alert.resolved ? 'success' : alert.acknowledged ? 'info' : 'error'}
+                      label={
+                        alert.resolved
+                          ? 'Resolved'
+                          : alert.acknowledged
+                            ? 'Acknowledged'
+                            : 'Active'
+                      }
+                      color={
+                        alert.resolved
+                          ? 'success'
+                          : alert.acknowledged
+                            ? 'info'
+                            : 'error'
+                      }
                       size="small"
                     />
                   </ListItemSecondaryAction>
@@ -892,7 +1036,9 @@ const LogAlertingSystem: React.FC<LogAlertingSystemProps> = ({
                   <CardContent>
                     <Typography variant="h6">Alert Rate</Typography>
                     <Typography variant="h3">
-                      {alerts.length > 0 ? (alerts.length / 24).toFixed(1) : '0'}
+                      {alerts.length > 0
+                        ? (alerts.length / 24).toFixed(1)
+                        : '0'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       alerts per hour
@@ -935,7 +1081,9 @@ interface AlertRuleDialogProps {
   open: boolean;
   rule: LogAlertRule | null;
   onClose: () => void;
-  onSave: (rule: Omit<LogAlertRule, 'id' | 'createdAt' | 'updatedAt' | 'triggerCount'>) => void;
+  onSave: (
+    rule: Omit<LogAlertRule, 'id' | 'createdAt' | 'updatedAt' | 'triggerCount'>
+  ) => void;
 }
 
 const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
@@ -989,14 +1137,26 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
   }, [rule]);
 
   const handleSave = () => {
-    if (ruleData.name && ruleData.query && ruleData.conditions && ruleData.notifications) {
-      onSave(ruleData as Omit<LogAlertRule, 'id' | 'createdAt' | 'updatedAt' | 'triggerCount'>);
+    if (
+      ruleData.name &&
+      ruleData.query &&
+      ruleData.conditions &&
+      ruleData.notifications
+    ) {
+      onSave(
+        ruleData as Omit<
+          LogAlertRule,
+          'id' | 'createdAt' | 'updatedAt' | 'triggerCount'
+        >
+      );
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{rule ? 'Edit Alert Rule' : 'Create Alert Rule'}</DialogTitle>
+      <DialogTitle>
+        {rule ? 'Edit Alert Rule' : 'Create Alert Rule'}
+      </DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} sm={6}>
@@ -1004,7 +1164,9 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               fullWidth
               label="Rule Name"
               value={ruleData.name || ''}
-              onChange={(e) => setRuleData({ ...ruleData, name: e.target.value })}
+              onChange={(e) =>
+                setRuleData({ ...ruleData, name: e.target.value })
+              }
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -1013,7 +1175,9 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               <Select
                 value={ruleData.severity || 'medium'}
                 label="Severity"
-                onChange={(e) => setRuleData({ ...ruleData, severity: e.target.value as any })}
+                onChange={(e) =>
+                  setRuleData({ ...ruleData, severity: e.target.value as any })
+                }
               >
                 <MenuItem value="low">Low</MenuItem>
                 <MenuItem value="medium">Medium</MenuItem>
@@ -1029,7 +1193,9 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               multiline
               rows={2}
               value={ruleData.description || ''}
-              onChange={(e) => setRuleData({ ...ruleData, description: e.target.value })}
+              onChange={(e) =>
+                setRuleData({ ...ruleData, description: e.target.value })
+              }
             />
           </Grid>
           <Grid item xs={12}>
@@ -1037,7 +1203,9 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               freeSolo
               options={SAMPLE_QUERIES}
               value={ruleData.query || ''}
-              onChange={(e, value) => setRuleData({ ...ruleData, query: value || '' })}
+              onChange={(e, value) =>
+                setRuleData({ ...ruleData, query: value || '' })
+              }
               renderInput={(params) => (
                 <TextField
                   {...params}
@@ -1054,10 +1222,15 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               <Select
                 value={ruleData.conditions?.aggregation || 'count'}
                 label="Aggregation"
-                onChange={(e) => setRuleData({
-                  ...ruleData,
-                  conditions: { ...ruleData.conditions!, aggregation: e.target.value as any }
-                })}
+                onChange={(e) =>
+                  setRuleData({
+                    ...ruleData,
+                    conditions: {
+                      ...ruleData.conditions!,
+                      aggregation: e.target.value as any,
+                    },
+                  })
+                }
               >
                 <MenuItem value="count">Count</MenuItem>
                 <MenuItem value="rate">Rate</MenuItem>
@@ -1074,10 +1247,15 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               <Select
                 value={ruleData.conditions?.operator || 'gt'}
                 label="Operator"
-                onChange={(e) => setRuleData({
-                  ...ruleData,
-                  conditions: { ...ruleData.conditions!, operator: e.target.value as any }
-                })}
+                onChange={(e) =>
+                  setRuleData({
+                    ...ruleData,
+                    conditions: {
+                      ...ruleData.conditions!,
+                      operator: e.target.value as any,
+                    },
+                  })
+                }
               >
                 <MenuItem value="gt">Greater Than</MenuItem>
                 <MenuItem value="gte">Greater Than or Equal</MenuItem>
@@ -1094,10 +1272,15 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               type="number"
               label="Threshold"
               value={ruleData.conditions?.threshold || 0}
-              onChange={(e) => setRuleData({
-                ...ruleData,
-                conditions: { ...ruleData.conditions!, threshold: parseFloat(e.target.value) || 0 }
-              })}
+              onChange={(e) =>
+                setRuleData({
+                  ...ruleData,
+                  conditions: {
+                    ...ruleData.conditions!,
+                    threshold: parseFloat(e.target.value) || 0,
+                  },
+                })
+              }
             />
           </Grid>
           <Grid item xs={12} sm={3}>
@@ -1106,10 +1289,15 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               type="number"
               label="Time Window (minutes)"
               value={ruleData.conditions?.timeWindow || 5}
-              onChange={(e) => setRuleData({
-                ...ruleData,
-                conditions: { ...ruleData.conditions!, timeWindow: parseInt(e.target.value) || 5 }
-              })}
+              onChange={(e) =>
+                setRuleData({
+                  ...ruleData,
+                  conditions: {
+                    ...ruleData.conditions!,
+                    timeWindow: parseInt(e.target.value) || 5,
+                  },
+                })
+              }
             />
           </Grid>
           <Grid item xs={12}>
@@ -1119,10 +1307,15 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
                 multiple
                 value={ruleData.notifications?.channels || []}
                 label="Notification Channels"
-                onChange={(e) => setRuleData({
-                  ...ruleData,
-                  notifications: { ...ruleData.notifications!, channels: e.target.value as any }
-                })}
+                onChange={(e) =>
+                  setRuleData({
+                    ...ruleData,
+                    notifications: {
+                      ...ruleData.notifications!,
+                      channels: e.target.value as any,
+                    },
+                  })
+                }
                 renderValue={(selected) => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {selected.map((value) => (
@@ -1147,13 +1340,18 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               fullWidth
               label="Recipients (comma-separated)"
               value={ruleData.notifications?.recipients?.join(', ') || ''}
-              onChange={(e) => setRuleData({
-                ...ruleData,
-                notifications: {
-                  ...ruleData.notifications!,
-                  recipients: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                }
-              })}
+              onChange={(e) =>
+                setRuleData({
+                  ...ruleData,
+                  notifications: {
+                    ...ruleData.notifications!,
+                    recipients: e.target.value
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  },
+                })
+              }
               helperText="Email addresses, phone numbers, or webhook URLs"
             />
           </Grid>
@@ -1163,10 +1361,15 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               type="number"
               label="Cooldown (minutes)"
               value={ruleData.notifications?.cooldownMinutes || 15}
-              onChange={(e) => setRuleData({
-                ...ruleData,
-                notifications: { ...ruleData.notifications!, cooldownMinutes: parseInt(e.target.value) || 15 }
-              })}
+              onChange={(e) =>
+                setRuleData({
+                  ...ruleData,
+                  notifications: {
+                    ...ruleData.notifications!,
+                    cooldownMinutes: parseInt(e.target.value) || 15,
+                  },
+                })
+              }
               helperText="Minimum time between notifications"
             />
           </Grid>
@@ -1175,7 +1378,9 @@ const AlertRuleDialog: React.FC<AlertRuleDialogProps> = ({
               control={
                 <Switch
                   checked={ruleData.enabled || false}
-                  onChange={(e) => setRuleData({ ...ruleData, enabled: e.target.checked })}
+                  onChange={(e) =>
+                    setRuleData({ ...ruleData, enabled: e.target.checked })
+                  }
                 />
               }
               label="Enable Rule"
@@ -1209,9 +1414,13 @@ const TestResultsDialog: React.FC<TestResultsDialogProps> = ({
 }) => {
   if (!rule) return null;
 
-  const wouldTrigger = results ? 
-    evaluateCondition(results.value, rule.conditions.threshold, rule.conditions.operator) : 
-    false;
+  const wouldTrigger = results
+    ? evaluateCondition(
+        results.value,
+        rule.conditions.threshold,
+        rule.conditions.operator
+      )
+    : false;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -1219,9 +1428,7 @@ const TestResultsDialog: React.FC<TestResultsDialogProps> = ({
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} sm={6}>
-            <Typography variant="h6">
-              Value: {results?.value || 0}
-            </Typography>
+            <Typography variant="h6">Value: {results?.value || 0}</Typography>
             <Typography variant="body2" color="text.secondary">
               {rule.conditions.aggregation} of matching logs
             </Typography>
@@ -1236,10 +1443,9 @@ const TestResultsDialog: React.FC<TestResultsDialogProps> = ({
           </Grid>
           <Grid item xs={12}>
             <Alert severity={wouldTrigger ? 'warning' : 'success'}>
-              {wouldTrigger 
+              {wouldTrigger
                 ? 'This rule would trigger an alert with the current data'
-                : 'This rule would not trigger an alert with the current data'
-              }
+                : 'This rule would not trigger an alert with the current data'}
             </Alert>
           </Grid>
           <Grid item xs={12}>
@@ -1248,8 +1454,14 @@ const TestResultsDialog: React.FC<TestResultsDialogProps> = ({
             </Typography>
             <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
               {results?.logs.slice(0, 10).map((log, index) => (
-                <Box key={index} sx={{ p: 1, mb: 1, bgcolor: 'grey.100', borderRadius: 1 }}>
-                  <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                <Box
+                  key={index}
+                  sx={{ p: 1, mb: 1, bgcolor: 'grey.100', borderRadius: 1 }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{ fontFamily: 'monospace' }}
+                  >
                     [{log.level}] {log.message}
                   </Typography>
                 </Box>
@@ -1266,15 +1478,26 @@ const TestResultsDialog: React.FC<TestResultsDialogProps> = ({
 };
 
 // Helper function for condition evaluation (moved outside component)
-const evaluateCondition = (value: number, threshold: number, operator: string) => {
+const evaluateCondition = (
+  value: number,
+  threshold: number,
+  operator: string
+) => {
   switch (operator) {
-    case 'gt': return value > threshold;
-    case 'gte': return value >= threshold;
-    case 'lt': return value < threshold;
-    case 'lte': return value <= threshold;
-    case 'eq': return value === threshold;
-    case 'ne': return value !== threshold;
-    default: return false;
+    case 'gt':
+      return value > threshold;
+    case 'gte':
+      return value >= threshold;
+    case 'lt':
+      return value < threshold;
+    case 'lte':
+      return value <= threshold;
+    case 'eq':
+      return value === threshold;
+    case 'ne':
+      return value !== threshold;
+    default:
+      return false;
   }
 };
 

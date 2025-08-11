@@ -60,7 +60,7 @@ import {
   VerificationMethod,
 } from '../../types/privacy';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Permission } from '../../types/permissions';
+import type { Permission } from '../../types/permissions';
 
 const DataSubjectRequestsPanel: React.FC = () => {
   const [page, setPage] = useState(0);
@@ -433,7 +433,7 @@ const DataSubjectRequestsPanel: React.FC = () => {
                 {overdueRequests}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Overdue (>30 days)
+                Overdue (&gt;30 days)
               </Typography>
             </CardContent>
           </Card>

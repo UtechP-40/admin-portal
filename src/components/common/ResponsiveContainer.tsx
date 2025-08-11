@@ -4,8 +4,8 @@ import {
   Container,
   useTheme,
   useMediaQuery,
-  Breakpoint,
 } from '@mui/material';
+import type { Breakpoint } from '@mui/material/styles';
 import { motion } from 'framer-motion';
 
 interface ResponsiveContainerProps {

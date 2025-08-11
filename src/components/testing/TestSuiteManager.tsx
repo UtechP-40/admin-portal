@@ -46,7 +46,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { testingService } from '../../services/testingService';
-import { TestSuite, ApiTest, TestExecution } from '../../types/testing';
+import type { TestSuite, ApiTest, TestExecution } from '../../types/testing';
 
 interface TestSuiteManagerProps {
   onSelectSuite?: (suite: TestSuite) => void;

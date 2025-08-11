@@ -32,7 +32,8 @@ import {
   Download,
   Share,
 } from '@mui/icons-material';
-import DashboardWidget, { WidgetConfig } from './DashboardWidget';
+import DashboardWidget from './DashboardWidget';
+import type { WidgetConfig } from './DashboardWidget';
 import { MetricCard } from '../charts';
 import { useRealtimeMetrics } from '../../hooks/useRealtimeMetrics';
 import { analyticsService } from '../../services/analytics';

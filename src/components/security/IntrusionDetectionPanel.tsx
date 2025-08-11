@@ -30,12 +30,12 @@ import {
   Divider,
   Grid,
 } from '@mui/material';
-import {
-  DataGrid,
+import { 
+  DataGrid, 
+  GridToolbar,
   GridColDef,
   GridRowParams,
-  GridToolbar,
-  GridActionsCellItem,
+  GridActionsCellItem
 } from '@mui/x-data-grid';
 import {
   Add as AddIcon,
@@ -53,14 +53,14 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { securityService } from '../../services/securityService';
-import {
+import type {
   IntrusionDetectionRule,
   SecuritySeverity,
   SecurityAlertCondition,
   SecurityAlertAction,
 } from '../../types/security';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Permission } from '../../types/permissions';
+import type { Permission } from '../../types/permissions';
 
 const IntrusionDetectionPanel: React.FC = () => {
   const [ruleDialogOpen, setRuleDialogOpen] = useState(false);

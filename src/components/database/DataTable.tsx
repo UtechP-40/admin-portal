@@ -20,9 +20,11 @@ import {
 import {
   DataGrid,
   GridToolbar,
-  GridActionsCellItem
+  GridActionsCellItem,
+  GridColDef,
+  GridRowParams,
+  GridRowId
 } from '@mui/x-data-grid';
-import type { GridColDef, GridRowParams, GridRowId } from '@mui/x-data-grid';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,

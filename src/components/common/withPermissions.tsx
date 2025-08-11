@@ -1,5 +1,5 @@
 import React from 'react';
-import { Permission, Role } from '../../types/permissions';
+import type { Permission, Role } from '../../types/permissions';
 import { usePermissions } from '../../hooks/usePermissions';
 import { Box, Typography, Alert } from '@mui/material';
 import { Lock as LockIcon } from '@mui/icons-material';

@@ -45,7 +45,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { testingService } from '../../services/testingService';
-import { TestSchedule, TestSuite, NotificationConfig } from '../../types/testing';
+import type { TestSchedule, TestSuite, NotificationConfig } from '../../types/testing';
 
 export function TestScheduler() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);

@@ -28,8 +28,8 @@ import {
   InputLabel,
   Select,
   OutlinedInput,
-  SelectChangeEvent,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import {
   Visibility as VisibilityIcon,
   Download as DownloadIcon,
@@ -48,10 +48,12 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useQuery } from '@tanstack/react-query';
 import { auditService } from '../../services/auditService';
 import {
-  AuditEvent,
   AuditEventType,
   AuditCategory,
   AuditSeverity,
+} from '../../types/audit';
+import type {
+  AuditEvent,
   AuditLogQuery,
 } from '../../types/audit';
 import { LoadingSpinner } from '../common';

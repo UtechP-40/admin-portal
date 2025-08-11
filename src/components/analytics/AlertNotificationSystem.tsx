@@ -44,7 +44,17 @@ import {
   FilterList,
 } from '@mui/icons-material';
 import { useRealtimeMetrics } from '../../hooks/useRealtimeMetrics';
-import { MetricAlert } from '../../services/websocketService';
+
+export interface MetricAlert {
+  id: string;
+  ruleName: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  timestamp: string;
+  metricName: string;
+  currentValue: number;
+  threshold: number;
+}
 
 export interface AlertNotificationSettings {
   enabled: boolean;

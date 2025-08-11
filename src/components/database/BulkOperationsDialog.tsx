@@ -50,9 +50,9 @@ import {
   Schedule as ScheduleIcon,
   History as HistoryIcon,
   Assessment as AnalysisIcon,
-  Template as TemplateIcon
+  ViewModule as TemplateIcon
 } from '@mui/icons-material';
-import type { GridRowId } from '@mui/x-data-grid';
+import { GridRowId } from '@mui/x-data-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DatabaseService } from '../../services/database';
 import { BulkOperationsService } from '../../services/bulkOperations';

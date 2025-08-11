@@ -17,8 +17,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  TreeView,
-  TreeItem,
+
   Alert,
   Grid,
   Card,
@@ -43,7 +42,8 @@ import {
   ArrowUpward as DirectIcon
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
-import { userManagementApi, RoleTemplate } from '../../services/userManagementApi';
+import { userManagementApi } from '../../services/userManagementApi';
+import type { RoleTemplate } from '../../services/userManagementApi';
 import { PERMISSION_DESCRIPTIONS } from '../../types/permissions';
 
 interface RoleHierarchyViewerProps {
@@ -95,7 +95,7 @@ const RoleHierarchyViewer: React.FC<RoleHierarchyViewerProps> = ({
     }
   }, [selectedRole]);
 
-  const buildTreeItems = (roleId: string, level = 0): React.ReactNode => {
+  const buildHierarchyItems = (roleId: string, level = 0): React.ReactNode => {
     if (!roleHierarchy) return null;
 
     const role = roleHierarchy.roles.find(r => r.id === roleId);
@@ -103,54 +103,78 @@ const RoleHierarchyViewer: React.FC<RoleHierarchyViewerProps> = ({
 
     const children = roleHierarchy.hierarchy[roleId] || [];
     const isSelected = selectedRoleId === roleId;
+    const isExpanded = expandedNodes.includes(roleId);
 
     return (
-      <TreeItem
-        key={roleId}
-        nodeId={roleId}
-        label={
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1, 
-              py: 1,
-              backgroundColor: isSelected ? 'primary.light' : 'transparent',
-              borderRadius: 1,
-              px: 1
-            }}
-            onClick={() => setSelectedRoleId(roleId)}
-          >
-            <SecurityIcon color={isSelected ? 'primary' : 'inherit'} />
-            <Typography 
-              variant="body2" 
-              fontWeight={isSelected ? 'bold' : 'normal'}
-            >
-              {role.name}
-            </Typography>
-            <Chip 
-              label={`L${role.level}`} 
-              size="small" 
-              color={level === 0 ? 'primary' : 'default'} 
-            />
-            <Chip 
-              label={`${role.permissions.length} perms`} 
-              size="small" 
-              variant="outlined" 
-            />
-            <Chip 
-              label={`${role.usageCount} users`} 
-              size="small" 
-              color="secondary" 
-            />
-            {role.isDefault && (
-              <Chip label="Default" size="small" color="primary" />
+      <Box key={roleId} sx={{ ml: level * 2 }}>
+        <ListItem
+          button
+          onClick={() => setSelectedRoleId(roleId)}
+          sx={{
+            backgroundColor: isSelected ? 'primary.light' : 'transparent',
+            borderRadius: 1,
+            mb: 0.5,
+            '&:hover': {
+              backgroundColor: isSelected ? 'primary.light' : 'action.hover',
+            }
+          }}
+        >
+          <ListItemIcon>
+            {children.length > 0 && (
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpandedNodes(prev => 
+                    isExpanded 
+                      ? prev.filter(id => id !== roleId)
+                      : [...prev, roleId]
+                  );
+                }}
+              >
+                <ExpandMoreIcon 
+                  sx={{ 
+                    transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                    transition: 'transform 0.2s'
+                  }} 
+                />
+              </IconButton>
             )}
-          </Box>
-        }
-      >
-        {children.map(childId => buildTreeItems(childId, level + 1))}
-      </TreeItem>
+            <SecurityIcon color={isSelected ? 'primary' : 'inherit'} />
+          </ListItemIcon>
+          <ListItemText
+            primary={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography 
+                  variant="body2" 
+                  fontWeight={isSelected ? 'bold' : 'normal'}
+                >
+                  {role.name}
+                </Typography>
+                <Chip 
+                  label={`L${role.level}`} 
+                  size="small" 
+                  color={level === 0 ? 'primary' : 'default'} 
+                />
+                <Chip 
+                  label={`${role.permissions.length} perms`} 
+                  size="small" 
+                  variant="outlined" 
+                />
+                <Chip 
+                  label={`${role.usageCount} users`} 
+                  size="small" 
+                  color="secondary" 
+                />
+                {role.isDefault && (
+                  <Chip label="Default" size="small" color="primary" />
+                )}
+              </Box>
+            }
+          />
+        </ListItem>
+        {isExpanded && children.map(childId => buildHierarchyItems(childId, level + 1))}
+      </Box>
     );
   };
 
@@ -449,14 +473,9 @@ const RoleHierarchyViewer: React.FC<RoleHierarchyViewerProps> = ({
           Role Hierarchy
         </Typography>
         <Paper sx={{ p: 2, maxHeight: 400, overflow: 'auto' }}>
-          <TreeView
-            defaultCollapseIcon={<ExpandMoreIcon />}
-            defaultExpandIcon={<SecurityIcon />}
-            expanded={expandedNodes}
-            onNodeToggle={(event, nodeIds) => setExpandedNodes(nodeIds)}
-          >
-            {rootRoles.map(role => buildTreeItems(role.id))}
-          </TreeView>
+          <List>
+            {rootRoles.map(role => buildHierarchyItems(role.id))}
+          </List>
         </Paper>
       </Box>
     );

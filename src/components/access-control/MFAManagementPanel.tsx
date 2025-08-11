@@ -33,8 +33,8 @@ import {
 } from '@mui/material';
 import {
   DataGrid,
-  type GridColDef,
-  type GridRowParams,
+  GridColDef,
+  GridRowParams,
   GridToolbarContainer,
   GridToolbarExport,
   GridToolbarFilterButton,
@@ -62,9 +62,10 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { accessControlService } from '../../services/accessControlService';
-import type { MFADevice, MFAMethod, MultiFactorAuthSettings } from '../../types/accessControl';
+import { MFAMethod } from '../../types/accessControl';
+import type { MFADevice, MultiFactorAuthSettings } from '../../types/accessControl';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Permission } from '../../types/permissions';
+import type { Permission } from '../../types/permissions';
 
 interface MFASetupDialogProps {
   open: boolean;
@@ -77,7 +78,7 @@ const MFASetupDialog: React.FC<MFASetupDialogProps> = ({ open, onClose, userId, 
   const [method, setMethod] = useState<MFAMethod>(MFAMethod.TOTP);
   const [deviceName, setDeviceName] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
-  const [setupData, setSetupData] = useState<any>(null);
+  const [setupData, setSetupData] = useState<unknown>(null);
   const [step, setStep] = useState<'setup' | 'verify'>('setup');
 
   const enableMFAMutation = useMutation({
